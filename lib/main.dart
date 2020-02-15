@@ -1,11 +1,12 @@
 import 'dart:async';
 
+import 'package:eager_ear/shared/pitch.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 
-import 'package:eager_ear/shared/music.dart';
+import 'package:eager_ear/games/pitch_match/main.dart';
 
 void main() => runApp(MyApp());
 
@@ -95,7 +96,8 @@ class _MyHomePageState extends State<MyHomePage> {
     if (hertz == -1) {
       _pitch = 'Sing!';
     } else {
-      _pitch = Music.pitchCLetters[Music.convertHertzToCStep(hertz)];
+      var detectedPitch = new Pitch.fromHertz(hertz);
+      _pitch = detectedPitch.toString();
     }
 
     setState(() {
@@ -137,6 +139,15 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+            RaisedButton(
+              child: Text("Pitch Match Game"),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => PitchMatchMain())
+                );
+              },
+            ),
             Padding(
               padding: const EdgeInsets.only(left: 8.0, right: 8.0, top: 102.0),
               child: Center(
