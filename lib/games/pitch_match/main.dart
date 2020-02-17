@@ -1,86 +1,136 @@
-import 'dart:async';
-import 'dart:typed_data';
-import 'dart:ui' as ui;
-
+import 'package:eager_ear/shared/music.dart';
+import 'package:eager_ear/shared/note.dart';
+import 'package:eager_ear/shared/pitch.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class PitchMatchMain extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: Text("Pitch Match"),
+      appBar: AppBar(
+        title: Text("Pitch Match"),
+      ),
+      body: Center(
+        child: Column(
+          children: <Widget>[
+            PitchMatchStaff(
+              notes: <Note> [
+                Note.fromHertz(440.0, PitchDuration.Eighth),
+                Note.fromPitch(Pitch.fromClass(PitchClass.G, 5)
+                  , PitchDuration.Eighth)
+              ],
+            )
+          ],
         ),
-        body: PitchMatchStaff()
+      )
     );
   }
 }
 
 class PitchMatchStaff extends StatefulWidget {
+  PitchMatchStaff({Key key, this.notes}) : super(key: key);
+
+  final List<Note> notes;
+
   @override
   State<StatefulWidget> createState() => new _PitchMatchStaffState();
 }
 
 class _PitchMatchStaffState extends State<PitchMatchStaff> {
-  ui.Image image;
-  bool isImageLoaded = false;
+  double _staffHeight = 400;
+  double _noteDim = 50;
+  double _noteStep;
+  var _staffWidgets = List<Widget>();
 
+  void _addNoteToStaff(Note note, int noteIndex) {
+    double _bottomOffset = 0.0;
+    double _leftOffset = 0.0;
+
+    _leftOffset += noteIndex * _noteDim;
+
+    if (note.pitch.octave == 4 || note.pitch.octave == 5) {
+      switch (note.pitch.pitchClass) {
+        case PitchClass.C:
+        case PitchClass.CSharp:
+          _bottomOffset += _noteStep;
+          break;
+        case PitchClass.D:
+        case PitchClass.DSharp:
+          _bottomOffset += _noteStep * 2;
+          break;
+        case PitchClass.E:
+          _bottomOffset += _noteStep * 3;
+          break;
+        case PitchClass.F:
+        case PitchClass.FSharp:
+          _bottomOffset += _noteStep * 4;
+          break;
+        case PitchClass.G:
+        case PitchClass.GSharp:
+          _bottomOffset += _noteStep * 5;
+          break;
+        case PitchClass.A:
+        case PitchClass.ASharp:
+          _bottomOffset += _noteStep * 6;
+          break;
+        case PitchClass.B:
+          _bottomOffset += _noteStep * 7;
+          break;
+        case PitchClass.Unknown:
+        // nothing
+          break;
+      }
+      if (note.pitch.octave == 5) {
+        _bottomOffset += _noteStep * 7;
+      }
+    }
+
+    _staffWidgets.add(
+      Positioned(
+        child: Container(
+          height: _noteDim,
+          width: _noteDim,
+//          decoration: BoxDecoration(
+//              border: Border.all(color: Colors.blueAccent)
+//          ),
+          child: Image.asset('assets/images/rabbit.png')
+        ),
+        left: _leftOffset,
+        bottom: _bottomOffset,
+      )
+    );
+  }
+
+  @override
   void initState() {
     super.initState();
-    init();
-  }
+    _noteStep = _noteDim / 2.0;
+    _staffWidgets.add(
+      Padding (
+        padding: EdgeInsets.fromLTRB(8.0, 0.0, 8.0, 0.0),
+        child: CustomPaint(
+          painter: new StaffPainter(),
+          child: Container(height: _staffHeight)
+        )
+      )
+    );
 
-  Future <Null> init() async {
-    final ByteData data = await rootBundle.load('assets/images/rabbit.png');
-    image = await loadImage(new Uint8List.view(data.buffer));
-  }
-
-  Future<ui.Image> loadImage(List<int> img) async {
-    final Completer<ui.Image> completer = new Completer();
-    ui.decodeImageFromList(img, (ui.Image img) {
-      setState(() {
-        isImageLoaded = true;
-      });
-      return completer.complete(img);
-    });
-    return completer.future;
-  }
-
-  Widget _buildImage() {
-    if (this.isImageLoaded) {
-      return new CustomPaint(
-        painter: new StaffPainter(noteImage: image),
-          child: Container(height: 200)
-      );
-    } else {
-      return new Center(child: new Text('loading'));
+    for(Note note in widget.notes) {
+      _addNoteToStaff(note, widget.notes.indexOf(note));
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Padding (
-              padding: EdgeInsets.all(8.0),
-              child: _buildImage()
-          )
-        ],
+      child: Stack(
+        children: _staffWidgets
       )
     );
   }
 }
 
 class StaffPainter extends CustomPainter {
-
-  StaffPainter({
-    this.noteImage
-  });
-
-  ui.Image noteImage;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -89,18 +139,19 @@ class StaffPainter extends CustomPainter {
     paint.color = Colors.teal;
     paint.strokeWidth = 5;
 
+    int spaces = 8;
     int lines = 5;
-    double spacing = size.height / lines;
+    double spacing = size.height / spaces;
+
+    double startY = 2 * spacing;
 
     for(int i = 0; i < lines; i++) {
       canvas.drawLine(
-        Offset(0, spacing * i),
-        Offset(size.width, spacing * i),
+        Offset(0, startY + (spacing * i)),
+        Offset(size.width, startY + (spacing * i)),
         paint,
       );
     }
-
-    canvas.drawImage(noteImage, new Offset(0.0, 0.0), new Paint());
   }
 
   @override

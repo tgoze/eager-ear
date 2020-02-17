@@ -9,6 +9,11 @@ class Note {
     this.duration = pitchDuration;
   }
 
+  Note.fromHertz(double hertz, PitchDuration pitchDuration) {
+    this.pitch = Pitch.fromHertz(hertz);
+    this.duration = pitchDuration;
+  }
+
   Pitch pitch;
   PitchDuration duration;
 }

@@ -4,6 +4,11 @@ class Pitch {
 
   Pitch();
 
+  Pitch.fromClass(PitchClass pitchClass, int octave) {
+    this.pitchClass = pitchClass;
+    this.octave = octave;
+  }
+
   Pitch.fromHertz(double hertz) {
     this.pitchClass = convertHertzToPitchClass(hertz);
     this.pitchClassString = convertHertzToPitchClassString(hertz);
