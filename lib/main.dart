@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 
+import 'package:assets_audio_player/assets_audio_player.dart';
+
 import 'package:eager_ear/shared/music.dart';
 
 void main() => runApp(MyApp());
@@ -56,6 +58,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   String _pitchText = '';
 
+  final assetsAudioPlayer = AssetsAudioPlayer();
+
   Future<bool> _requestAudioPermission() async {
     PermissionStatus permissionStatus = await PermissionHandler()
       .checkPermissionStatus(PermissionGroup.speech);
@@ -101,6 +105,12 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _pitchText = _pitch;
     });
+  }
+
+  void _playAudio() {
+    assetsAudioPlayer.open(
+      "assets/audio/piano-c_C_major.wav",
+    );
   }
 
   @override
@@ -162,7 +172,15 @@ class _MyHomePageState extends State<MyHomePage> {
                       fontSize: 23.0),
                 ),
               ),
-            )
+            ),
+            Padding(
+              child: Center(
+                child: FlatButton(
+                  child: Text('Play'),
+                  onPressed: _playAudio,
+                )
+              ),
+            ),
           ],
         ),
       ),
