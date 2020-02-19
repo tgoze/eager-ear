@@ -162,7 +162,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.only(left: 8.0, right: 8.0, top: 102.0),
+              padding: const EdgeInsets.only(left: 8.0, right: 8.0, top: 0.0),
               child: Center(
                 child: Text(
                   _pitchText,
@@ -174,6 +174,7 @@ class _MyHomePageState extends State<MyHomePage> {
               ),
             ),
             Padding(
+              padding:const EdgeInsets.only(left: 8.0, right: 8.0, top: 0.0),
               child: Center(
                 child: FlatButton(
                   child: Text('Play'),
