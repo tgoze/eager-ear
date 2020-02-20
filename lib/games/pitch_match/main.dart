@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 
 import 'package:eager_ear/games/pitch_match/pm_listener.dart';
@@ -51,22 +52,13 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
   String _feedback = '';
 
   void _start() async {
-    bool isCorrect = false;
     PitchMatchListener pmListener = new PitchMatchListener();
+    var pitchStream = await pmListener.startPitchStream();
+  }
 
-    for(Note note in widget.notes) {
-      do {
-        isCorrect = await pmListener.listenForPitch(note.pitch);
-        if (isCorrect) {
-          setState(() {
-            _feedback = "Got a " + note.pitch.pitchClass.toString();
-          });
-        }
-      } while(!isCorrect);
-    }
-
+  void _printPitch(Pitch pitch) {
     setState(() {
-      _feedback = "Fuck ya!";
+      _feedback = pitch.toString();
     });
   }
 

@@ -7,25 +7,18 @@ import 'package:eager_ear/shared/pitch.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class PitchMatchListener {
-  static const _pitchStream = EventChannel('com.tgconsulting.eager_ear/stream');
-  StreamSubscription _pitchSubscription;
+  static const _hertzStream = EventChannel('com.tgconsulting.eager_ear/stream');
 
-  Future<bool> listenForPitch(Pitch referencePitch) async {
-    bool isCorrect = false;
+  bool isCorrect = false;
+
+  Future<Stream<Pitch>> startPitchStream() async {
     var audioAccessGranted = await requestAudioPermission();
+    Stream<Pitch> pitchStream;
     if (audioAccessGranted) {
-      _pitchSubscription = _pitchStream.receiveBroadcastStream().listen(
-        (hertz) => isCorrect = _comparePitch(referencePitch, hertz)
-      );
+      pitchStream = _hertzStream.receiveBroadcastStream()
+        .map((hertz) => Pitch.fromHertz(hertz));
     }
-    if (isCorrect)
-      stopListening();
-    return isCorrect;
-  }
-
-  void stopListening() {
-    if (_pitchSubscription != null)
-      _pitchSubscription.cancel();
+    return pitchStream;
   }
 
   Future<bool> requestAudioPermission() async {
@@ -41,7 +34,7 @@ class PitchMatchListener {
     return permissionStatus == PermissionStatus.granted;
   }
 
-  bool _comparePitch(Pitch reference, double inputHertz) {
+  bool comparePitch(Pitch reference, double inputHertz) {
     return reference == Pitch.fromHertz(inputHertz);
   }
 }
