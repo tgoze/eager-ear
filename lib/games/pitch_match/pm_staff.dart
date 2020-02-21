@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import 'package:eager_ear/shared/music.dart';
@@ -12,11 +14,15 @@ class PitchMatchStaff extends StatefulWidget {
   State<StatefulWidget> createState() => new _PitchMatchStaffState();
 }
 
-class _PitchMatchStaffState extends State<PitchMatchStaff> {
+class _PitchMatchStaffState extends State<PitchMatchStaff>
+    with TickerProviderStateMixin {
   double _staffHeight = 400;
   double _noteDim = 50;
   double _noteStep;
   var _staffWidgets = List<Widget>();
+
+  AnimationController noteAnimationController;
+  Animation<double> animation;
 
   void _addNoteToStaff(Note note, int noteIndex) {
     double _bottomOffset = 0.0;
@@ -63,10 +69,19 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
 
     _staffWidgets.add(
         Positioned(
-          child: Container(
+          child: AnimatedBuilder(
+            animation: noteAnimationController,
+            child: Container(
               height: _noteDim,
               width: _noteDim,
               child: Image.asset('assets/images/rabbit.png')
+            ),
+            builder: (BuildContext context, Widget child){
+              return Transform.rotate(
+                angle: animation.value,
+                child: child
+              );
+            },
           ),
           left: _leftOffset,
           bottom: _bottomOffset,
@@ -88,9 +103,27 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
         )
     );
 
+    noteAnimationController = AnimationController(
+      duration: Duration(seconds: 5),
+      vsync: this
+    );
+
+    animation = Tween<double>(
+      begin: 0,
+      end: 2 * math.pi
+    ).animate(noteAnimationController)..addListener(() { setState(() {}); });
+
     for(Note note in widget.notes) {
       _addNoteToStaff(note, widget.notes.indexOf(note));
     }
+
+    noteAnimationController.forward();
+  }
+
+  @override
+  void dispose() {
+    noteAnimationController.dispose();
+    super.dispose();
   }
 
   @override
