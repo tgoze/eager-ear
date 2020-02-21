@@ -1,9 +1,20 @@
+import 'dart:async';
+
+import 'package:eager_ear/games/pitch_match/pm_listener.dart';
+import 'package:flutter/material.dart';
+
+import 'package:eager_ear/games/pitch_match/pm_staff.dart';
 import 'package:eager_ear/shared/music.dart';
 import 'package:eager_ear/shared/note.dart';
 import 'package:eager_ear/shared/pitch.dart';
-import 'package:flutter/material.dart';
 
 class PitchMatchMain extends StatelessWidget {
+  final List<Note> notes = [
+    Note.fromPitch(Pitch.fromClass(PitchClass.F, 4), PitchDuration.Eighth),
+    Note.fromPitch(Pitch.fromClass(PitchClass.A, 4), PitchDuration.Eighth),
+    Note.fromPitch(Pitch.fromClass(PitchClass.C, 5), PitchDuration.Eighth),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -14,11 +25,10 @@ class PitchMatchMain extends StatelessWidget {
         child: Column(
           children: <Widget>[
             PitchMatchStaff(
-              notes: <Note> [
-                Note.fromHertz(440.0, PitchDuration.Eighth),
-                Note.fromPitch(Pitch.fromClass(PitchClass.G, 5)
-                  , PitchDuration.Eighth)
-              ],
+              notes: notes
+            ),
+            PitchMatchManager(
+              notes: notes
             )
           ],
         ),
@@ -27,135 +37,80 @@ class PitchMatchMain extends StatelessWidget {
   }
 }
 
-class PitchMatchStaff extends StatefulWidget {
-  PitchMatchStaff({Key key, this.notes}) : super(key: key);
+class PitchMatchManager extends StatefulWidget {
+  PitchMatchManager({Key key, this.notes}) : super(key: key);
 
   final List<Note> notes;
 
   @override
-  State<StatefulWidget> createState() => new _PitchMatchStaffState();
+  _PitchMatchManagerState createState() => _PitchMatchManagerState();
 }
 
-class _PitchMatchStaffState extends State<PitchMatchStaff> {
-  double _staffHeight = 400;
-  double _noteDim = 50;
-  double _noteStep;
-  var _staffWidgets = List<Widget>();
+class _PitchMatchManagerState extends State<PitchMatchManager> {
 
-  void _addNoteToStaff(Note note, int noteIndex) {
-    double _bottomOffset = 0.0;
-    double _leftOffset = 0.0;
+  String _feedback = '';
+  Stream<Pitch> _pitchStream;
+  StreamSubscription _pitchSubscription;
+  IconData _listenButtonIcon = Icons.play_arrow;
 
-    _leftOffset += noteIndex * _noteDim;
+  void _toggleListening() async {
+    var pmListener = new PitchMatchListener();
 
-    if (note.pitch.octave == 4 || note.pitch.octave == 5) {
-      switch (note.pitch.pitchClass) {
-        case PitchClass.C:
-        case PitchClass.CSharp:
-          _bottomOffset += _noteStep;
-          break;
-        case PitchClass.D:
-        case PitchClass.DSharp:
-          _bottomOffset += _noteStep * 2;
-          break;
-        case PitchClass.E:
-          _bottomOffset += _noteStep * 3;
-          break;
-        case PitchClass.F:
-        case PitchClass.FSharp:
-          _bottomOffset += _noteStep * 4;
-          break;
-        case PitchClass.G:
-        case PitchClass.GSharp:
-          _bottomOffset += _noteStep * 5;
-          break;
-        case PitchClass.A:
-        case PitchClass.ASharp:
-          _bottomOffset += _noteStep * 6;
-          break;
-        case PitchClass.B:
-          _bottomOffset += _noteStep * 7;
-          break;
-        case PitchClass.Unknown:
-        // nothing
-          break;
+    if (_pitchSubscription == null) {
+      _pitchStream = await pmListener.startPitchStream();
+
+      if (_pitchStream != null) {
+        int noteIndex = 0;
+        _pitchSubscription = _pitchStream.listen((Pitch pitch) {
+          if (noteIndex >= widget.notes.length) {
+            _cancelListener();
+          }
+          else if (pitch == widget.notes[noteIndex].pitch) {
+            noteIndex++;
+            setState(() { _feedback = noteIndex.toString(); });
+          }
+        });
+
+        setState(() { _listenButtonIcon = Icons.stop; });
+      } else {
+        // Audio access not granted
       }
-      if (note.pitch.octave == 5) {
-        _bottomOffset += _noteStep * 7;
-      }
+    } else {
+      _cancelListener();
     }
-
-    _staffWidgets.add(
-      Positioned(
-        child: Container(
-          height: _noteDim,
-          width: _noteDim,
-//          decoration: BoxDecoration(
-//              border: Border.all(color: Colors.blueAccent)
-//          ),
-          child: Image.asset('assets/images/rabbit.png')
-        ),
-        left: _leftOffset,
-        bottom: _bottomOffset,
-      )
-    );
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _noteStep = _noteDim / 2.0;
-    _staffWidgets.add(
-      Padding (
-        padding: EdgeInsets.fromLTRB(8.0, 0.0, 8.0, 0.0),
-        child: CustomPaint(
-          painter: new StaffPainter(),
-          child: Container(height: _staffHeight)
-        )
-      )
-    );
-
-    for(Note note in widget.notes) {
-      _addNoteToStaff(note, widget.notes.indexOf(note));
+  void _cancelListener() {
+    if (_pitchSubscription != null) {
+      _pitchSubscription.cancel();
+      _pitchSubscription = null;
     }
+    setState(() { _listenButtonIcon = Icons.play_arrow; });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Stack(
-        children: _staffWidgets
-      )
+    return Row(
+      children: <Widget>[
+        Expanded(
+          flex: 1,
+          child: Ink(
+            decoration: const ShapeDecoration(
+              shape: CircleBorder(),
+              color: Colors.lightBlue
+            ),
+            child: IconButton(
+              icon: Icon(_listenButtonIcon),
+              iconSize: 36.0,
+              onPressed: _toggleListening,
+              color: Colors.white
+            )
+          )
+        ),
+        Center(
+          child: Text(_feedback),
+        )
+      ],
     );
-  }
-}
-
-class StaffPainter extends CustomPainter {
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Paint paint = Paint();
-
-    paint.color = Colors.teal;
-    paint.strokeWidth = 5;
-
-    int spaces = 8;
-    int lines = 5;
-    double spacing = size.height / spaces;
-
-    double startY = 2 * spacing;
-
-    for(int i = 0; i < lines; i++) {
-      canvas.drawLine(
-        Offset(0, startY + (spacing * i)),
-        Offset(size.width, startY + (spacing * i)),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return false;
   }
 }

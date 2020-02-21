@@ -1,6 +1,10 @@
 import 'package:eager_ear/shared/music.dart';
 
 class Pitch {
+  PitchClass pitchClass;
+  String pitchClassString;
+  int octave;
+  double hertz;
 
   Pitch();
 
@@ -21,8 +25,10 @@ class Pitch {
     return pitchClassString + octave.toString();
   }
 
-  PitchClass pitchClass;
-  String pitchClassString;
-  int octave;
-  double hertz;
+  @override
+  bool operator ==(covariant Pitch other) =>
+    octave == other.octave && pitchClass == other.pitchClass;
+
+  @override
+  int get hashCode => pitchClass.hashCode;
 }
