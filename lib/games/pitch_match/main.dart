@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:eager_ear/games/pitch_match/pm_listener.dart';
 import 'package:flutter/material.dart';
@@ -50,16 +49,43 @@ class PitchMatchManager extends StatefulWidget {
 class _PitchMatchManagerState extends State<PitchMatchManager> {
 
   String _feedback = '';
+  Stream<Pitch> _pitchStream;
+  StreamSubscription _pitchSubscription;
+  IconData _listenButtonIcon = Icons.play_arrow;
 
-  void _start() async {
-    PitchMatchListener pmListener = new PitchMatchListener();
-    var pitchStream = await pmListener.startPitchStream();
+  void _toggleListening() async {
+    var pmListener = new PitchMatchListener();
+
+    if (_pitchSubscription == null) {
+      _pitchStream = await pmListener.startPitchStream();
+
+      if (_pitchStream != null) {
+        int noteIndex = 0;
+        _pitchSubscription = _pitchStream.listen((Pitch pitch) {
+          if (noteIndex >= widget.notes.length) {
+            _cancelListener();
+          }
+          else if (pitch == widget.notes[noteIndex].pitch) {
+            noteIndex++;
+            setState(() { _feedback = noteIndex.toString(); });
+          }
+        });
+
+        setState(() { _listenButtonIcon = Icons.stop; });
+      } else {
+        // Audio access not granted
+      }
+    } else {
+      _cancelListener();
+    }
   }
 
-  void _printPitch(Pitch pitch) {
-    setState(() {
-      _feedback = pitch.toString();
-    });
+  void _cancelListener() {
+    if (_pitchSubscription != null) {
+      _pitchSubscription.cancel();
+      _pitchSubscription = null;
+    }
+    setState(() { _listenButtonIcon = Icons.play_arrow; });
   }
 
   @override
@@ -71,42 +97,18 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
           child: Ink(
             decoration: const ShapeDecoration(
               shape: CircleBorder(),
-              color: Colors.teal
+              color: Colors.lightBlue
             ),
             child: IconButton(
-              icon: Icon(Icons.play_arrow),
+              icon: Icon(_listenButtonIcon),
               iconSize: 36.0,
-              onPressed: _start,
+              onPressed: _toggleListening,
               color: Colors.white
             )
           )
         ),
-        Expanded(
-          flex: 1,
-          child: Ink(
-            decoration: const ShapeDecoration(
-                shape: CircleBorder(),
-                color: Colors.teal
-            ),
-            child: IconButton(
-                icon: Icon(Icons.stop),
-                iconSize: 36.0,
-                onPressed: ()=>log('stop'),
-                color: Colors.white
-            )
-          )
-        ),
-        Padding(
-          padding: const EdgeInsets.only(left: 8.0, right: 8.0, top: 102.0),
-          child: Center(
-            child: Text(
-              _feedback,
-              style: TextStyle(
-                  color: Colors.teal,
-                  fontWeight: FontWeight.w500,
-                  fontSize: 23.0),
-            ),
-          ),
+        Center(
+          child: Text(_feedback),
         )
       ],
     );

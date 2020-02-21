@@ -9,8 +9,6 @@ import 'package:permission_handler/permission_handler.dart';
 class PitchMatchListener {
   static const _hertzStream = EventChannel('com.tgconsulting.eager_ear/stream');
 
-  bool isCorrect = false;
-
   Future<Stream<Pitch>> startPitchStream() async {
     var audioAccessGranted = await requestAudioPermission();
     Stream<Pitch> pitchStream;
@@ -32,9 +30,5 @@ class PitchMatchListener {
     }
 
     return permissionStatus == PermissionStatus.granted;
-  }
-
-  bool comparePitch(Pitch reference, double inputHertz) {
-    return reference == Pitch.fromHertz(inputHertz);
   }
 }
