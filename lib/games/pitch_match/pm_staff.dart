@@ -6,9 +6,15 @@ import 'package:eager_ear/shared/music.dart';
 import 'package:eager_ear/shared/note.dart';
 
 class PitchMatchStaff extends StatefulWidget {
-  PitchMatchStaff({Key key, this.notes}) : super(key: key);
+  PitchMatchStaff({
+    Key key,
+    this.notes,
+    this.currentNoteIndex,
+    this.noteAnimationController}) : super(key: key);
 
   final List<Note> notes;
+  final int currentNoteIndex;
+  final AnimationController noteAnimationController;
 
   @override
   State<StatefulWidget> createState() => new _PitchMatchStaffState();
@@ -20,9 +26,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff>
   double _noteDim = 50;
   double _noteStep;
   var _staffWidgets = List<Widget>();
-
-  AnimationController noteAnimationController;
-  Animation<double> animation;
+  List<double> _noteAngles = List<double>();
 
   void _addNoteToStaff(Note note, int noteIndex) {
     double _bottomOffset = 0.0;
@@ -67,10 +71,28 @@ class _PitchMatchStaffState extends State<PitchMatchStaff>
       }
     }
 
+    double interval = 1 / widget.notes.length;
+    double begin = interval * noteIndex;
+    double end = begin + interval;
+
+    Animation<double> noteAnimation;
+    noteAnimation = Tween<double>(
+        begin: 0,
+        end: 2 * math.pi
+    ).animate(CurvedAnimation(
+        parent: widget.noteAnimationController,
+        curve: Interval(begin, end)
+      ))
+      ..addListener(() { setState(() {
+        _noteAngles[noteIndex] = noteAnimation.value;
+      });
+    });
+
+    _noteAngles.add(0);
     _staffWidgets.add(
         Positioned(
           child: AnimatedBuilder(
-            animation: noteAnimationController,
+            animation: widget.noteAnimationController,
             child: Container(
               height: _noteDim,
               width: _noteDim,
@@ -78,7 +100,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff>
             ),
             builder: (BuildContext context, Widget child){
               return Transform.rotate(
-                angle: animation.value,
+                angle: _noteAngles[noteIndex],
                 child: child
               );
             },
@@ -103,27 +125,9 @@ class _PitchMatchStaffState extends State<PitchMatchStaff>
         )
     );
 
-    noteAnimationController = AnimationController(
-      duration: Duration(seconds: 5),
-      vsync: this
-    );
-
-    animation = Tween<double>(
-      begin: 0,
-      end: 2 * math.pi
-    ).animate(noteAnimationController)..addListener(() { setState(() {}); });
-
     for(Note note in widget.notes) {
       _addNoteToStaff(note, widget.notes.indexOf(note));
     }
-
-    noteAnimationController.forward();
-  }
-
-  @override
-  void dispose() {
-    noteAnimationController.dispose();
-    super.dispose();
   }
 
   @override

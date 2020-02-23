@@ -18,22 +18,13 @@ class PitchMatchMain extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+        appBar: AppBar(
         title: Text("Pitch Match"),
       ),
       body: Center(
-        child: Column(
-          children: <Widget>[
-            PitchMatchStaff(
-              notes: notes
-            ),
-            PitchMatchManager(
-              notes: notes
-            )
-          ],
+        child: PitchMatchManager(notes: notes)
         ),
-      )
-    );
+      );
   }
 }
 
@@ -46,12 +37,14 @@ class PitchMatchManager extends StatefulWidget {
   _PitchMatchManagerState createState() => _PitchMatchManagerState();
 }
 
-class _PitchMatchManagerState extends State<PitchMatchManager> {
+class _PitchMatchManagerState extends State<PitchMatchManager>
+    with SingleTickerProviderStateMixin {
 
-  String _feedback = '';
   Stream<Pitch> _pitchStream;
   StreamSubscription _pitchSubscription;
   IconData _listenButtonIcon = Icons.play_arrow;
+  int _currentNoteIndex = 0;
+  AnimationController _noteAnimationController;
 
   void _toggleListening() async {
     var pmListener = new PitchMatchListener();
@@ -66,8 +59,12 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
             _cancelListener();
           }
           else if (pitch == widget.notes[noteIndex].pitch) {
+            setState(() { _currentNoteIndex = noteIndex; });
+            if (noteIndex == 0)
+              _noteAnimationController.reset();
+            _noteAnimationController.animateTo((noteIndex + 1)
+                * (1 / widget.notes.length));
             noteIndex++;
-            setState(() { _feedback = noteIndex.toString(); });
           }
         });
 
@@ -89,26 +86,47 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    _noteAnimationController = AnimationController(
+        duration: Duration(seconds: 2),
+        vsync: this
+    );
+  }
+
+  @override
+  void dispose() {
+    _noteAnimationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: <Widget>[
-        Expanded(
-          flex: 1,
-          child: Ink(
-            decoration: const ShapeDecoration(
-              shape: CircleBorder(),
-              color: Colors.lightBlue
-            ),
-            child: IconButton(
-              icon: Icon(_listenButtonIcon),
-              iconSize: 36.0,
-              onPressed: _toggleListening,
-              color: Colors.white
-            )
-          )
+        PitchMatchStaff(
+          notes: widget.notes,
+          currentNoteIndex: _currentNoteIndex,
+          noteAnimationController: _noteAnimationController,
         ),
-        Center(
-          child: Text(_feedback),
+        Row(
+          children: <Widget>[
+            Expanded(
+              flex: 1,
+              child: Ink(
+                decoration: const ShapeDecoration(
+                  shape: CircleBorder(),
+                  color: Colors.lightBlue
+                ),
+                child: IconButton(
+                  icon: Icon(_listenButtonIcon),
+                  iconSize: 36.0,
+                  onPressed: _toggleListening,
+                  color: Colors.white
+                )
+              )
+            )
+          ],
         )
       ],
     );
