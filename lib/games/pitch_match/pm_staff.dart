@@ -1,5 +1,3 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 
 import 'package:eager_ear/shared/music.dart';
@@ -9,12 +7,10 @@ class PitchMatchStaff extends StatefulWidget {
   PitchMatchStaff({
     Key key,
     this.notes,
-    this.currentNoteIndex,
-    this.noteAnimationController}) : super(key: key);
+    this.currentNoteIndex}) : super(key: key);
 
   final List<Note> notes;
-  final int currentNoteIndex;
-  final AnimationController noteAnimationController;
+  final ValueNotifier currentNoteIndex;
 
   @override
   State<StatefulWidget> createState() => new _PitchMatchStaffState();
@@ -26,7 +22,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff>
   double _noteDim = 50;
   double _noteStep;
   var _staffWidgets = List<Widget>();
-  List<double> _noteAngles = List<double>();
+  var _noteAnimationControllers = List<AnimationController>();
 
   void _addNoteToStaff(Note note, int noteIndex) {
     double _bottomOffset = 0.0;
@@ -71,36 +67,40 @@ class _PitchMatchStaffState extends State<PitchMatchStaff>
       }
     }
 
-    double interval = 1 / widget.notes.length;
-    double begin = interval * noteIndex;
-    double end = begin + interval;
+    _noteAnimationControllers.add(AnimationController(
+      duration: Duration(milliseconds: 200),
+      vsync: this
+    ));
 
-    Animation<double> noteAnimation;
-    noteAnimation = Tween<double>(
-        begin: 0,
-        end: 2 * math.pi
-    ).animate(CurvedAnimation(
-        parent: widget.noteAnimationController,
-        curve: Interval(begin, end)
-      ))
-      ..addListener(() { setState(() {
-        _noteAngles[noteIndex] = noteAnimation.value;
-      });
-    });
+    Animation<Offset> newNoteAnimation = Tween<Offset>(
+        begin: Offset.zero,
+        end: const Offset(0.0, -0.3),
+      ).animate(
+        CurvedAnimation(
+          parent: _noteAnimationControllers[noteIndex],
+          curve: Curves.easeOut,
+          reverseCurve: Curves.bounceIn
+        )..addStatusListener((status) {
+          if (status == AnimationStatus.completed) {
+            _noteAnimationControllers[noteIndex].reverse();
+          } else if (status == AnimationStatus.dismissed) {
+            _noteAnimationControllers[noteIndex].stop();
+          }
+        })
+      );
 
-    _noteAngles.add(0);
     _staffWidgets.add(
         Positioned(
           child: AnimatedBuilder(
-            animation: widget.noteAnimationController,
+            animation: _noteAnimationControllers[noteIndex],
             child: Container(
               height: _noteDim,
               width: _noteDim,
               child: Image.asset('assets/images/rabbit.png')
             ),
             builder: (BuildContext context, Widget child){
-              return Transform.rotate(
-                angle: _noteAngles[noteIndex],
+              return SlideTransition(
+                position: newNoteAnimation,
                 child: child
               );
             },
@@ -128,6 +128,10 @@ class _PitchMatchStaffState extends State<PitchMatchStaff>
     for(Note note in widget.notes) {
       _addNoteToStaff(note, widget.notes.indexOf(note));
     }
+
+    widget.currentNoteIndex.addListener(() {
+      _noteAnimationControllers[widget.currentNoteIndex.value].forward();
+    });
   }
 
   @override
@@ -137,6 +141,14 @@ class _PitchMatchStaffState extends State<PitchMatchStaff>
             children: _staffWidgets
         )
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    for (AnimationController ctrl in _noteAnimationControllers) {
+      ctrl.dispose();
+    }
   }
 }
 

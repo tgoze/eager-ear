@@ -37,16 +37,13 @@ class PitchMatchManager extends StatefulWidget {
   _PitchMatchManagerState createState() => _PitchMatchManagerState();
 }
 
-class _PitchMatchManagerState extends State<PitchMatchManager>
-    with SingleTickerProviderStateMixin {
-
+class _PitchMatchManagerState extends State<PitchMatchManager> {
   Stream<Pitch> _pitchStream;
   StreamSubscription _pitchSubscription;
   IconData _listenButtonIcon = Icons.play_arrow;
-  int _currentNoteIndex = 0;
-  AnimationController _noteAnimationController;
+  ValueNotifier<int> _currentNoteIndex = ValueNotifier(-1);
 
-  void _toggleListening() async {
+  void _toggleListener() async {
     var pmListener = new PitchMatchListener();
 
     if (_pitchSubscription == null) {
@@ -59,12 +56,7 @@ class _PitchMatchManagerState extends State<PitchMatchManager>
             _cancelListener();
           }
           else if (pitch == widget.notes[noteIndex].pitch) {
-            setState(() { _currentNoteIndex = noteIndex; });
-            if (noteIndex == 0)
-              _noteAnimationController.reset();
-            _noteAnimationController.animateTo((noteIndex + 1)
-                * (1 / widget.notes.length));
-            noteIndex++;
+            _currentNoteIndex.value = noteIndex++;
           }
         });
 
@@ -86,28 +78,12 @@ class _PitchMatchManagerState extends State<PitchMatchManager>
   }
 
   @override
-  void initState() {
-    super.initState();
-    _noteAnimationController = AnimationController(
-        duration: Duration(seconds: 2),
-        vsync: this
-    );
-  }
-
-  @override
-  void dispose() {
-    _noteAnimationController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
         PitchMatchStaff(
           notes: widget.notes,
-          currentNoteIndex: _currentNoteIndex,
-          noteAnimationController: _noteAnimationController,
+          currentNoteIndex: _currentNoteIndex
         ),
         Row(
           children: <Widget>[
@@ -121,7 +97,7 @@ class _PitchMatchManagerState extends State<PitchMatchManager>
                 child: IconButton(
                   icon: Icon(_listenButtonIcon),
                   iconSize: 36.0,
-                  onPressed: _toggleListening,
+                  onPressed: _toggleListener,
                   color: Colors.white
                 )
               )
