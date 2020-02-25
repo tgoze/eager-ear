@@ -27,7 +27,7 @@ class Pitch {
 
   @override
   bool operator ==(covariant Pitch other) =>
-    octave == other.octave && pitchClass == other.pitchClass;
+    pitchClass == other.pitchClass;
 
   @override
   int get hashCode => pitchClass.hashCode;

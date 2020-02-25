@@ -18,22 +18,13 @@ class PitchMatchMain extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+        appBar: AppBar(
         title: Text("Pitch Match"),
       ),
       body: Center(
-        child: Column(
-          children: <Widget>[
-            PitchMatchStaff(
-              notes: notes
-            ),
-            PitchMatchManager(
-              notes: notes
-            )
-          ],
+        child: PitchMatchManager(notes: notes)
         ),
-      )
-    );
+      );
   }
 }
 
@@ -47,13 +38,12 @@ class PitchMatchManager extends StatefulWidget {
 }
 
 class _PitchMatchManagerState extends State<PitchMatchManager> {
-
-  String _feedback = '';
   Stream<Pitch> _pitchStream;
   StreamSubscription _pitchSubscription;
   IconData _listenButtonIcon = Icons.play_arrow;
+  ValueNotifier<int> _currentNoteIndex = ValueNotifier(-1);
 
-  void _toggleListening() async {
+  void _toggleListener() async {
     var pmListener = new PitchMatchListener();
 
     if (_pitchSubscription == null) {
@@ -66,8 +56,7 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
             _cancelListener();
           }
           else if (pitch == widget.notes[noteIndex].pitch) {
-            noteIndex++;
-            setState(() { _feedback = noteIndex.toString(); });
+            _currentNoteIndex.value = noteIndex++;
           }
         });
 
@@ -90,25 +79,30 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
       children: <Widget>[
-        Expanded(
-          flex: 1,
-          child: Ink(
-            decoration: const ShapeDecoration(
-              shape: CircleBorder(),
-              color: Colors.lightBlue
-            ),
-            child: IconButton(
-              icon: Icon(_listenButtonIcon),
-              iconSize: 36.0,
-              onPressed: _toggleListening,
-              color: Colors.white
-            )
-          )
+        PitchMatchStaff(
+          notes: widget.notes,
+          currentNoteIndex: _currentNoteIndex
         ),
-        Center(
-          child: Text(_feedback),
+        Row(
+          children: <Widget>[
+            Expanded(
+              flex: 1,
+              child: Ink(
+                decoration: const ShapeDecoration(
+                  shape: CircleBorder(),
+                  color: Colors.lightBlue
+                ),
+                child: IconButton(
+                  icon: Icon(_listenButtonIcon),
+                  iconSize: 36.0,
+                  onPressed: _toggleListener,
+                  color: Colors.white
+                )
+              )
+            )
+          ],
         )
       ],
     );
