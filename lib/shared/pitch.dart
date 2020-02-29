@@ -11,6 +11,7 @@ class Pitch {
   Pitch.fromClass(PitchClass pitchClass, int octave) {
     this.pitchClass = pitchClass;
     this.octave = octave;
+    this.pitchClassString = convertPitchClassToString(pitchClass, octave);
   }
 
   Pitch.fromHertz(double hertz) {

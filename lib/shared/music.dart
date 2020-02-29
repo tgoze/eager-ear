@@ -78,6 +78,10 @@ String convertHertzToPitchClassString(double hertz) {
   return pitchClassString;
 }
 
+String convertPitchClassToString(PitchClass pitchClass, int octave) {
+  return _cBasedPitchClassNames[pitchClass.index];
+}
+
 int getOctaveFromHertz(double hertz) {
   int octave = -1;
   int step = _convertHertzToStep(hertz);

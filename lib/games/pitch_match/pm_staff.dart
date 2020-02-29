@@ -130,7 +130,9 @@ class _PitchMatchStaffState extends State<PitchMatchStaff>
     }
 
     widget.currentNoteIndex.addListener(() {
-      _noteAnimationControllers[widget.currentNoteIndex.value].forward();
+      if (widget.currentNoteIndex.value < widget.notes.length
+          && widget.currentNoteIndex.value >= 0)
+        _noteAnimationControllers[widget.currentNoteIndex.value].forward();
     });
   }
 
