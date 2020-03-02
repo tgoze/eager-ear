@@ -1,8 +1,11 @@
 import 'dart:async';
 
-import 'package:eager_ear/games/pitch_match/pm_listener.dart';
 import 'package:flutter/material.dart';
 
+import 'package:assets_audio_player/assets_audio_player.dart';
+
+import 'package:eager_ear/games/pitch_match/pm_listener.dart';
+import 'package:eager_ear/games/pitch_match/pm_player.dart';
 import 'package:eager_ear/games/pitch_match/pm_staff.dart';
 import 'package:eager_ear/shared/music.dart';
 import 'package:eager_ear/shared/note.dart';
@@ -40,32 +43,30 @@ class PitchMatchManager extends StatefulWidget {
 class _PitchMatchManagerState extends State<PitchMatchManager> {
   Stream<Pitch> _pitchStream;
   StreamSubscription _pitchSubscription;
-  IconData _listenButtonIcon = Icons.play_arrow;
-  ValueNotifier<int> _currentNoteIndex = ValueNotifier(-1);
+  ValueNotifier<int> _currentNoteIndex = new ValueNotifier(-1);
+  int _noteIndexCounter = 0;
 
-  void _toggleListener() async {
+  AssetsAudioPlayer _player = new AssetsAudioPlayer();
+
+  void _startListener() async {
     var pmListener = new PitchMatchListener();
 
-    if (_pitchSubscription == null) {
+    if (_pitchSubscription == null && _pitchStream == null) {
       _pitchStream = await pmListener.startPitchStream();
 
       if (_pitchStream != null) {
-        int noteIndex = 0;
+        _noteIndexCounter = 0;
         _pitchSubscription = _pitchStream.listen((Pitch pitch) {
-          if (noteIndex >= widget.notes.length) {
+          if (_noteIndexCounter >= widget.notes.length) {
             _cancelListener();
           }
-          else if (pitch == widget.notes[noteIndex].pitch) {
-            _currentNoteIndex.value = noteIndex++;
+          else if (pitch == widget.notes[_noteIndexCounter].pitch) {
+            _currentNoteIndex.value = _noteIndexCounter++;
           }
         });
-
-        setState(() { _listenButtonIcon = Icons.stop; });
       } else {
         // Audio access not granted
       }
-    } else {
-      _cancelListener();
     }
   }
 
@@ -73,8 +74,29 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
     if (_pitchSubscription != null) {
       _pitchSubscription.cancel();
       _pitchSubscription = null;
+      _pitchStream = null;
     }
-    setState(() { _listenButtonIcon = Icons.play_arrow; });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _player.playlistCurrent.listen((playlistPlayingAudio) {
+      _currentNoteIndex.value = playlistPlayingAudio.index;
+    }); // animates correct note
+    _player.isPlaying.listen((isPlaying){
+      if (isPlaying) {
+        _cancelListener();
+      } else {
+        _startListener();
+      }
+    }); // listens for singing when not playing
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _player.dispose();
   }
 
   @override
@@ -89,17 +111,10 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
           children: <Widget>[
             Expanded(
               flex: 1,
-              child: Ink(
-                decoration: const ShapeDecoration(
-                  shape: CircleBorder(),
-                  color: Colors.lightBlue
-                ),
-                child: IconButton(
-                  icon: Icon(_listenButtonIcon),
-                  iconSize: 36.0,
-                  onPressed: _toggleListener,
-                  color: Colors.white
-                )
+              child: PitchMatchPlayer(
+                notes: widget.notes,
+                currentNoteIndex: _currentNoteIndex,
+                player: _player,
               )
             )
           ],

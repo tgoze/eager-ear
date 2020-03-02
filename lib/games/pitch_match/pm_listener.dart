@@ -25,7 +25,7 @@ class PitchMatchListener {
 
     if (permissionStatus != PermissionStatus.granted) {
       Map<PermissionGroup, PermissionStatus> permission =
-      await PermissionHandler().requestPermissions([PermissionGroup.speech]);
+        await PermissionHandler().requestPermissions([PermissionGroup.speech]);
       permissionStatus = permission[PermissionGroup.speech];
     }
 
