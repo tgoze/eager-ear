@@ -43,16 +43,15 @@ class PitchMatchManager extends StatefulWidget {
 class _PitchMatchManagerState extends State<PitchMatchManager> {
   Stream<Pitch> _pitchStream;
   StreamSubscription _pitchSubscription;
-  IconData _listenButtonIcon = Icons.play_arrow;
   ValueNotifier<int> _currentNoteIndex = new ValueNotifier(-1);
   int _noteIndexCounter = 0;
 
   AssetsAudioPlayer _player = new AssetsAudioPlayer();
 
-  void _toggleListener() async {
+  void _startListener() async {
     var pmListener = new PitchMatchListener();
 
-    if (_pitchSubscription == null) {
+    if (_pitchSubscription == null && _pitchStream == null) {
       _pitchStream = await pmListener.startPitchStream();
 
       if (_pitchStream != null) {
@@ -65,13 +64,9 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
             _currentNoteIndex.value = _noteIndexCounter++;
           }
         });
-
-        setState(() { _listenButtonIcon = Icons.stop; });
       } else {
         // Audio access not granted
       }
-    } else {
-      _cancelListener();
     }
   }
 
@@ -79,8 +74,8 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
     if (_pitchSubscription != null) {
       _pitchSubscription.cancel();
       _pitchSubscription = null;
+      _pitchStream = null;
     }
-    setState(() { _listenButtonIcon = Icons.play_arrow; });
   }
 
   @override
@@ -88,7 +83,14 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
     super.initState();
     _player.playlistCurrent.listen((playlistPlayingAudio) {
       _currentNoteIndex.value = playlistPlayingAudio.index;
-    });
+    }); // animates correct note
+    _player.isPlaying.listen((isPlaying){
+      if (isPlaying) {
+        _cancelListener();
+      } else {
+        _startListener();
+      }
+    }); // listens for singing when not playing
   }
 
   @override
