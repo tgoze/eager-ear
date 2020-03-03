@@ -89,6 +89,12 @@ class _PitchMatchStaffState extends State<PitchMatchStaff>
         })
       );
 
+    var imagePath = '';
+    if (note.duration == PitchDuration.Eighth)
+      imagePath = 'assets/images/Bunny-cropped.png';
+    else
+      imagePath = 'assets/images/Turtle-cropped.png';
+
     _staffWidgets.add(
         Positioned(
           child: AnimatedBuilder(
@@ -96,7 +102,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff>
             child: Container(
               height: _noteDim,
               width: _noteDim,
-              child: Image.asset('assets/images/rabbit.png')
+              child: Image.asset(imagePath)
             ),
             builder: (BuildContext context, Widget child){
               return SlideTransition(
