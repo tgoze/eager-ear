@@ -53,7 +53,7 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
       child: Ink(
           decoration: const ShapeDecoration(
               shape: CircleBorder(),
-              color: Colors.orange
+              color: Color(0xFFFFAD05)
           ),
           child: IconButton(
               icon: Icon(_listenButtonIcon),

@@ -166,7 +166,7 @@ class StaffPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     Paint paint = Paint();
 
-    paint.color = Colors.teal;
+    paint.color = Color(0xFF376996);
     paint.strokeWidth = 5;
 
     int spaces = 8;
