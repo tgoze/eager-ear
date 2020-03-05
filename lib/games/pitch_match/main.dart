@@ -110,25 +110,26 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
           notes: widget.notes,
           currentNoteIndex: _currentNoteIndex
         ),
-        Row(
-          children: <Widget>[
-            Expanded(
-              flex: 1,
-              child: Stack(
-                children: <Widget>[
-                  CustomPaint(
-                    painter: BackgroundPainter(),
-                    child: Container(height: 160,),
-                  ),
-                  PitchMatchPlayer(
-                    notes: widget.notes,
-                    currentNoteIndex: _currentNoteIndex,
-                    player: _player,
-                  )
-                ],
+        Expanded(
+          flex: 1,
+          child: Stack(
+            children: <Widget>[
+              CustomPaint(
+                painter: BackgroundPainter(),
+                child: Container(
+                  height: 300,
+//                      decoration: BoxDecoration(
+//                          border: Border.all(color: Colors.blueAccent)
+//                      )
+                ),
+              ),
+              PitchMatchPlayer(
+                notes: widget.notes,
+                currentNoteIndex: _currentNoteIndex,
+                player: _player,
               )
-            )
-          ],
+            ],
+          )
         )
       ],
     );
@@ -140,19 +141,31 @@ class BackgroundPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     Paint paint = Paint();
-    Path path  = Path();
+    Path path = Path();
 
     paint.color = Color(0xFF55AE00);
     paint.style = PaintingStyle.fill;
 
-    path.moveTo(0, size.height * 0.9167);
-    path.quadraticBezierTo(size.width * 0.25, size.height * 0.875,
+    path.moveTo(0, size.height * 0.6);
+    path.quadraticBezierTo(size.width * 0.25, size.height * 0.575,
         size.width * 0.5, size.height * 0.9167);
     path.quadraticBezierTo(size.width * 0.75, size.height * 0.9584,
         size.width * 1.0, size.height * 0.9167);
     path.lineTo(size.width, size.height);
     path.lineTo(0, size.height);
     canvas.drawPath(path, paint);
+
+    Path path2 = Path();
+    paint.color = Colors.green;
+    path2.moveTo(size.width, size.height * 0.67);
+    path2.quadraticBezierTo(size.width * 0.8, size.height * 0.50,
+        size.width * 0.43, size.height * 0.8);
+//    path2.quadraticBezierTo(size.width * 0.75, size.height * 0.9584,
+//        size.width * 1.0, size.height * 0.9167);
+    path2.lineTo(0, size.height);
+    path2.lineTo(size.width, size.height);
+    canvas.drawPath(path2, paint);
+
   }
 
   @override
