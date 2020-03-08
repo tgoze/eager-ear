@@ -16,7 +16,7 @@ class PitchMatchMain extends StatelessWidget {
     Note.fromPitch(Pitch.fromClass(PitchClass.F, 4), PitchDuration.Eighth),
     Note.fromPitch(Pitch.fromClass(PitchClass.A, 4), PitchDuration.Eighth),
     Note.fromPitch(Pitch.fromClass(PitchClass.C, 5), PitchDuration.Eighth),
-    Note.fromPitch(Pitch.fromClass(PitchClass.B, 4), PitchDuration.Quarter),
+    Note.fromPitch(Pitch.fromClass(PitchClass.B, 4), PitchDuration.Eighth),
   ];
 
   @override

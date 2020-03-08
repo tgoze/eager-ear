@@ -37,7 +37,7 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
     super.initState();
 
     for (Note note in widget.notes) {
-      _audioPaths.add("assets/audio/" + note.pitch.toString() + ".wav");
+      _audioPaths.add("assets/audio/bunny/" + note.pitch.toString() + ".wav");
     }
 
     widget.player.isPlaying.listen((isPlaying) {
