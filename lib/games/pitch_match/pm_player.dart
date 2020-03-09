@@ -27,8 +27,10 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
     if(widget.player.isPlaying.value) {
       widget.player.stop();
       widget.currentNoteIndex.value = -1;
+      setState(() { _listenButtonIcon = Icons.play_arrow; });
     } else {
       widget.player.openPlaylist(Playlist(assetAudioPaths: _audioPaths));
+      setState(() { _listenButtonIcon = Icons.stop; });
     }
   }
 
@@ -40,10 +42,10 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
       _audioPaths.add("assets/audio/bunny/" + note.pitch.toString() + ".wav");
     }
 
-    widget.player.isPlaying.listen((isPlaying) {
-      isPlaying ? _listenButtonIcon = Icons.stop
-          : _listenButtonIcon = Icons.play_arrow;
-      setState(() {});
+    widget.player.playlistAudioFinished.listen((playlistAudio) {
+      if (playlistAudio.playlist.assetAudioPaths.length ==
+            playlistAudio.index + 1)
+        setState(() { _listenButtonIcon = Icons.play_arrow; });
     });
   }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:assets_audio_player/assets_audio_player.dart';
@@ -87,13 +88,6 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
     _player.playlistCurrent.listen((playlistPlayingAudio) {
       _currentNoteIndex.value = playlistPlayingAudio.index;
     }); // animates correct note
-    _player.isPlaying.listen((isPlaying){
-      if (isPlaying) {
-        _cancelListener();
-      } else {
-        _startListener();
-      }
-    }); // listens for singing when not playing
   }
 
   @override
@@ -114,20 +108,16 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
           flex: 1,
           child: Stack(
             children: <Widget>[
-              CustomPaint(
-                painter: BackgroundPainter(),
-                child: Container(
-                  height: 300,
-//                      decoration: BoxDecoration(
-//                          border: Border.all(color: Colors.blueAccent)
-//                      )
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: BackgroundPainter(),
                 ),
               ),
               PitchMatchPlayer(
                 notes: widget.notes,
                 currentNoteIndex: _currentNoteIndex,
                 player: _player,
-              )
+              ),
             ],
           )
         )
