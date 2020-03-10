@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -113,10 +114,36 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
                   painter: BackgroundPainter(),
                 ),
               ),
-              PitchMatchPlayer(
-                notes: widget.notes,
-                currentNoteIndex: _currentNoteIndex,
-                player: _player,
+
+              Positioned.directional(
+                textDirection: TextDirection.rtl,
+                child: Ink(
+                  decoration: const ShapeDecoration(
+                  shape: CircleBorder(),
+                  color: Color(0xFFFFAD05)
+                  ),
+                  child: IconButton(
+                    icon: Icon(Icons.mic),
+                    iconSize: 36.0,
+                    color: Colors.white
+                  )
+                ),
+                top: 1,
+                bottom: 1,
+                start: 1,
+                end: 1,
+              ),
+              Positioned.directional(
+                child: PitchMatchPlayer(
+                  notes: widget.notes,
+                  currentNoteIndex: _currentNoteIndex,
+                  player: _player,
+                ),
+                textDirection: TextDirection.rtl,
+                top: 1,
+                bottom: 1,
+                start: 4,
+                end: 6,
               ),
             ],
           )
