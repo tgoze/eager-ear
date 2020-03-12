@@ -101,53 +101,75 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
-        PitchMatchStaff(
-          notes: widget.notes,
-          currentNoteIndex: _currentNoteIndex
+        Expanded(
+          flex: 6,
+          child: PitchMatchStaff(
+            notes: widget.notes,
+            currentNoteIndex: _currentNoteIndex
+          ),
         ),
         Expanded(
           flex: 1,
-          child: Stack(
-            children: <Widget>[
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: BackgroundPainter(),
-                ),
-              ),
-
-              Positioned.directional(
-                textDirection: TextDirection.rtl,
-                child: Ink(
-                  decoration: const ShapeDecoration(
+          child: Ink(
+              decoration: const ShapeDecoration(
                   shape: CircleBorder(),
                   color: Color(0xFFFFAD05)
-                  ),
-                  child: IconButton(
-                    icon: Icon(Icons.mic),
-                    iconSize: 36.0,
-                    color: Colors.white
-                  )
-                ),
-                top: 1,
-                bottom: 1,
-                start: 1,
-                end: 1,
               ),
-              Positioned.directional(
-                child: PitchMatchPlayer(
-                  notes: widget.notes,
-                  currentNoteIndex: _currentNoteIndex,
-                  player: _player,
-                ),
-                textDirection: TextDirection.rtl,
-                top: 1,
-                bottom: 1,
-                start: 4,
-                end: 6,
-              ),
-            ],
-          )
+              child: IconButton(
+                  icon: Icon(Icons.mic, color: Colors.white,),
+                  iconSize: 36.0,
+                  color: Colors.white
+              )
+          ),
+        ),
+        Expanded(
+          flex: 1,
+          child:  CustomPaint(
+            painter: BackgroundPainter(),
+          ),
         )
+//        Expanded(
+//          flex: 1,
+//          child: Stack(
+//            children: <Widget>[
+//              Positioned.fill(
+//                child: CustomPaint(
+//                  painter: BackgroundPainter(),
+//                ),
+//              ),
+//              Positioned.directional(
+//                textDirection: TextDirection.rtl,
+//                child: Ink(
+//                  decoration: const ShapeDecoration(
+//                  shape: CircleBorder(),
+//                  color: Color(0xFFFFAD05)
+//                  ),
+//                  child: IconButton(
+//                    icon: Icon(Icons.mic),
+//                    iconSize: 36.0,
+//                    color: Colors.white
+//                  )
+//                ),
+//                top: 1,
+//                bottom: 1,
+//                start: 2,
+//                end: 100,
+//              ),
+//              Positioned.directional(
+//                child: PitchMatchPlayer(
+//                  notes: widget.notes,
+//                  currentNoteIndex: _currentNoteIndex,
+//                  player: _player,
+//                ),
+//                textDirection: TextDirection.rtl,
+//                top: 1,
+//                bottom: 1,
+//                start: 1,
+//                end: 1,
+//              ),
+//            ],
+//          )
+//        )
       ],
     );
   }

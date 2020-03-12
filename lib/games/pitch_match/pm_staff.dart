@@ -175,10 +175,8 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      key: staffKey,
-      flex: 3,
-      child: Container(
+    return Container(
+        key: staffKey,
         child: Stack(
           children: <Widget>[
             Padding (
@@ -196,7 +194,6 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
             ),
           ],
         ),
-      )
     );
   }
 }

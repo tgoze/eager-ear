@@ -51,13 +51,11 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child:  IconButton(
-        icon: Icon(_listenButtonIcon),
-        iconSize: 36.0,
-        onPressed: _playOrStopMelody,
-        color: Colors.white
-      )
+    return IconButton(
+      icon: Icon(_listenButtonIcon),
+      iconSize: 36.0,
+      onPressed: _playOrStopMelody,
+      color: Colors.white
     );
   }
 
