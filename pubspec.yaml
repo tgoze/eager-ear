@@ -28,6 +28,10 @@ dependencies:
 
   assets_audio_player: ^1.2.3
 
+  spritewidget: 0.9.24
+
+  provider:
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

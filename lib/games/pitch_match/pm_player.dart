@@ -1,34 +1,34 @@
 import 'package:flutter/material.dart';
 
+import 'package:assets_audio_player/assets_audio_player.dart';
+import 'package:provider/provider.dart';
+
+import 'bloc/pm_game.dart';
 import 'package:eager_ear/shared/note.dart';
 
-import 'package:assets_audio_player/assets_audio_player.dart';
-
 class PitchMatchPlayer extends StatefulWidget {
-  PitchMatchPlayer({Key key,
-    this.notes,
-    this.player,
-    this.currentNoteIndex}) : super(key: key);
+  PitchMatchPlayer({Key key, this.notes}) : super(key: key);
 
   final List<Note> notes;
-  final AssetsAudioPlayer player;
-  final ValueNotifier currentNoteIndex;
 
   @override
   _PitchMatchPlayerState createState() => _PitchMatchPlayerState();
 }
 
 class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
-
+  AssetsAudioPlayer player = new AssetsAudioPlayer();
   IconData _listenButtonIcon = Icons.play_arrow;
   var _audioPaths = List<String>();
 
   void _playOrStopMelody() {
-    if(widget.player.isPlaying.value) {
-      widget.player.stop();
-      widget.currentNoteIndex.value = -1;
+    if (player.isPlaying.value) {
+      player.stop();
+      Provider.of<PitchMatchGame>(context, listen: false)
+          .setPreviewAnimating(-1);
+      setState(() { _listenButtonIcon = Icons.play_arrow; });
     } else {
-      widget.player.openPlaylist(Playlist(assetAudioPaths: _audioPaths));
+      player.openPlaylist(Playlist(assetAudioPaths: _audioPaths));
+      setState(() { _listenButtonIcon = Icons.stop; });
     }
   }
 
@@ -36,32 +36,33 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
   void initState() {
     super.initState();
 
-    for (Note note in widget.notes) {
-      _audioPaths.add("assets/audio/bunny/" + note.pitch.toString() + ".wav");
-    }
+    player.playlistCurrent.listen((playlistPlayingAudio) {
+      Provider.of<PitchMatchGame>(context, listen: false)
+          .setPreviewAnimating(playlistPlayingAudio.index);
+    });
 
-    widget.player.isPlaying.listen((isPlaying) {
-      isPlaying ? _listenButtonIcon = Icons.stop
-          : _listenButtonIcon = Icons.play_arrow;
-      setState(() {});
+    player.playlistAudioFinished.listen((playlistAudio) {
+      if (playlistAudio.playlist.assetAudioPaths.length ==
+            playlistAudio.index + 1)
+        setState(() { _listenButtonIcon = Icons.play_arrow; });
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Ink(
-          decoration: const ShapeDecoration(
-              shape: CircleBorder(),
-              color: Color(0xFFFFAD05)
-          ),
-          child: IconButton(
-              icon: Icon(_listenButtonIcon),
-              iconSize: 36.0,
-              onPressed: _playOrStopMelody,
-              color: Colors.white
-          )
-      )
+    _audioPaths.clear();
+
+    for (Note note in widget.notes) {
+      setState(() {
+        _audioPaths.add("assets/audio/bunny/" + note.pitch.toString() + ".wav");
+      });
+    }
+
+    return IconButton(
+      icon: Icon(_listenButtonIcon),
+      iconSize: 36.0,
+      onPressed: _playOrStopMelody,
+      color: Colors.white
     );
   }
 
