@@ -1,24 +1,29 @@
-import 'dart:math' as math;
-import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:spritewidget/spritewidget.dart';
 
-import 'package:eager_ear/shared/widgets/staff_painter.dart';
+import 'bloc/pm_game.dart';
 import 'package:eager_ear/shared/music.dart';
 import 'package:eager_ear/shared/note.dart';
-import 'package:flutter/services.dart';
-
-import 'package:spritewidget/spritewidget.dart';
+import 'package:eager_ear/shared/widgets/staff_painter.dart';
+import 'package:eager_ear/games/pitch_match/sprite_nodes/note_node.dart';
+import 'package:eager_ear/games/pitch_match/sprite_nodes/staff_node.dart';
+import 'package:provider/provider.dart';
 
 class PitchMatchStaff extends StatefulWidget {
   PitchMatchStaff({
     Key key,
     this.notes,
-    this.currentNoteIndex,
-    this.backgroundSize }) : super(key: key);
+    this.previewIndex,
+    this.successIndex,
+    this.backgroundSize,
+  }) : super(key: key);
 
   final List<Note> notes;
-  final ValueNotifier currentNoteIndex;
+  final ValueNotifier previewIndex;
+  final ValueNotifier successIndex;
   final Size backgroundSize;
 
   @override
@@ -26,158 +31,56 @@ class PitchMatchStaff extends StatefulWidget {
 }
 
 class _PitchMatchStaffState extends State<PitchMatchStaff> {
-
-  NodeWithSize rootStaffNode;
-  List<Node> noteNodes = new List<Node>();
+  StaffNode rootStaffNode;
   GlobalKey staffKey = GlobalKey();
+  bool _assetsLoaded = false;
+  ImageMap _noteImages;
 
-  Future<ImageMap> _loadNoteAssets() async {
+  Future<Null> _loadNoteAssets() async {
     ImageMap noteImages = new ImageMap(rootBundle);
     await noteImages.load(<String>[
       'assets/images/bunny.png',
       'assets/images/turtle.png'
     ]);
-    return noteImages;
-  }
-
-  Offset _findOffsetOnStaff(Note note, Size parentSize, double noteHeight) {
-    double _noteStep = noteHeight / 2;
-    double _leftOffset = 0;
-    double _topOffset = _noteStep;
-
-    int numAllowed = (parentSize.width / noteHeight).floor();
-
-    // Find bottom offset
-    if (note.pitch.octave == 4 || note.pitch.octave == 5) {
-      switch (note.pitch.pitchClass) {
-        case PitchClass.C:
-        case PitchClass.CSharp:
-          _topOffset += _noteStep * 6;
-          break;
-        case PitchClass.D:
-        case PitchClass.DSharp:
-          _topOffset += _noteStep * 5;
-          break;
-        case PitchClass.E:
-          _topOffset += _noteStep * 4;
-          break;
-        case PitchClass.F:
-        case PitchClass.FSharp:
-          _topOffset += _noteStep * 3;
-          break;
-        case PitchClass.G:
-        case PitchClass.GSharp:
-          _topOffset += _noteStep * 2;
-          break;
-        case PitchClass.A:
-        case PitchClass.ASharp:
-          _topOffset += _noteStep * 1;
-          break;
-        case PitchClass.B:
-          _topOffset += _noteStep * 0;
-          break;
-        case PitchClass.Unknown:
-        // nothing
-          break;
-      }
-      if (note.pitch.octave == 4) {
-        _topOffset += _noteStep * 7;
-      }
-    }
-
-    // Find left offset
-    int spaces = math.min(widget.notes.length, numAllowed) + 1;
-    _leftOffset = (parentSize.width / spaces);
-    _leftOffset *= (widget.notes.indexOf(note) + 1);
-
-     return Offset(_leftOffset, _topOffset);
-  }
-
-  Offset _findOffsetOnPath(double percent, Path path) {
-    PathMetrics pathMetrics = path.computeMetrics();
-    PathMetric pathMetric = pathMetrics.elementAt(0);
-    percent = pathMetric.length * percent;
-    Tangent pos = pathMetric.getTangentForOffset(percent);
-    return pos.position;
+    _noteImages = noteImages;
   }
 
   @override
   void initState() {
     super.initState();
 
-    rootStaffNode = NodeWithSize(Size(1024, 1024));
+    rootStaffNode = StaffNode(null, null);
 
-    _loadNoteAssets().then((noteImages) {
-      for (Note note in widget.notes) {
-        Sprite bunnySprite = Sprite
-            .fromImage(noteImages['assets/images/bunny.png']);
+    _loadNoteAssets().then((_) {
+      setState(() {
+        _assetsLoaded = true;
+      });
+    });
 
-        Size staffSize = staffKey.currentContext.size;
-        double noteDim = staffSize.height / 8;
+    var pmState = Provider.of<PitchMatchGame>(context, listen: false);
 
-        bunnySprite.size = Size.square(noteDim);
-        var staffPos = _findOffsetOnStaff(note, staffSize, noteDim);
-
-        var randGen = math.Random();
-        double offsetBez = ((200 * randGen.nextDouble()) - 100);
-        double startDx = staffPos.dx + offsetBez;
-        var startPathPos = Offset(startDx,
-            staffSize.height + staffSize.height * .25);
-        var endPathPos = Offset(staffPos.dx, staffPos.dy - 25);
-
-        Path path = Path();
-        path.moveTo(startPathPos.dx, startPathPos.dy);
-        path.quadraticBezierTo(startDx + .5 * -offsetBez, staffPos.dy - 125,
-            endPathPos.dx, endPathPos.dy);
-
-        bunnySprite.position = startPathPos;
-        noteNodes.add(bunnySprite);
-        rootStaffNode.addChild(bunnySprite);
-        var enterMotion = MotionSequence([
-          new MotionDelay(randGen.nextDouble() * 1.25),
-          new MotionTween((a) =>
-            bunnySprite.position = _findOffsetOnPath(a, path),
-            0.0, 1.0, .5, Curves.linearToEaseOut
-          ),
-          new MotionTween((a) => bunnySprite.position = a,
-            endPathPos, staffPos, .1, Curves.bounceOut
-          ),
-        ]);
-        bunnySprite.motions.run(enterMotion);
+    pmState.previewAnimating.addListener(() {
+      int newIndex = pmState.previewAnimating.value;
+      if (newIndex < widget.notes.length && newIndex >= 0) {
+        NoteNode noteNode = rootStaffNode.children[newIndex];
+        noteNode.animatePreviewHop();
       }
     });
 
-    widget.currentNoteIndex.addListener(() {
-      if (widget.currentNoteIndex.value < widget.notes.length
-          && widget.currentNoteIndex.value >= 0) {
-        var sprite = noteNodes[widget.currentNoteIndex.value];
-        var startPos = sprite.position;
-        MotionSequence previewNoteMotion = new MotionSequence([
-          new MotionTween(
-            (a) => sprite.position = a,
-            startPos,
-            startPos + Offset(0, -30),
-            0.3,
-            Curves.easeOut
-          ),
-          new MotionTween(
-            (a) => sprite.position = a,
-            startPos + Offset(0, -30),
-            startPos,
-            0.3,
-            Curves.bounceOut
-          ),
-        ]);
-        sprite.motions.run(previewNoteMotion);
-      }
+    pmState.successAnimating.addListener(() {
+      NoteNode noteNode = rootStaffNode.children[pmState.successAnimating.value];
+      noteNode.animateSuccessHop(staffKey.currentContext.size);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    if(rootStaffNode.children.isNotEmpty)
+      rootStaffNode.removeAllChildren();
+
     return Container(
-        key: staffKey,
         child: Stack(
+          key: staffKey,
           children: <Widget>[
             Padding (
                 padding: EdgeInsets.fromLTRB(8.0, 0.0, 8.0, 0.0),
@@ -188,10 +91,32 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
                   ),
                 )
             ),
-            SpriteWidget(
-                rootStaffNode,
-                SpriteBoxTransformMode.nativePoints
-            ),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                if (_assetsLoaded) {
+                  var staffSize = Size(constraints.maxWidth, constraints.maxHeight);
+                  rootStaffNode = StaffNode(widget.notes, staffSize);
+                  ui.Image image;
+                  for (Note note in widget.notes) {
+                    switch (note.duration) {
+                      case PitchDuration.Eighth:
+                        image = _noteImages['assets/images/bunny.png'];
+                        break;
+                      default:
+                        image = _noteImages['assets/images/bunny.png'];
+                        break;
+                    }
+                    var noteNode = NoteNode(image, note);
+                    rootStaffNode.addNoteChild(noteNode);
+                    noteNode.animateHopToStaff(staffSize, widget.notes);
+                  }
+                }
+                return SpriteWidget(
+                    rootStaffNode,
+                    SpriteBoxTransformMode.nativePoints
+                );
+              }
+            )
           ],
         ),
     );

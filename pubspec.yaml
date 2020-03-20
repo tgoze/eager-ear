@@ -30,6 +30,8 @@ dependencies:
 
   spritewidget: 0.9.24
 
+  provider:
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
