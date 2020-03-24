@@ -5,6 +5,7 @@ class Pitch {
   String pitchClassString;
   int octave;
   double hertz;
+  double variance;
 
   Pitch();
 
@@ -19,6 +20,7 @@ class Pitch {
     this.pitchClassString = convertHertzToPitchClassString(hertz);
     this.octave = getOctaveFromHertz(hertz);
     this.hertz = hertz;
+    this.variance = convertHertzToStepVariance(hertz);
   }
 
   @override

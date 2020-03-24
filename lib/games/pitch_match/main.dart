@@ -15,31 +15,65 @@ import 'bloc/pm_game.dart';
 
 class PitchMatchMain extends StatelessWidget {
   final List<Note> notes = [
-    Note.fromPitch(Pitch.fromClass(PitchClass.F, 4), PitchDuration.Eighth),
-    Note.fromPitch(Pitch.fromClass(PitchClass.A, 4), PitchDuration.Eighth),
-    Note.fromPitch(Pitch.fromClass(PitchClass.C, 5), PitchDuration.Eighth),
-    Note.fromPitch(Pitch.fromClass(PitchClass.A, 4), PitchDuration.Eighth),
-    Note.fromPitch(Pitch.fromClass(PitchClass.F, 4), PitchDuration.Eighth),
-    Note.fromPitch(Pitch.fromClass(PitchClass.A, 4), PitchDuration.Eighth),
-    Note.fromPitch(Pitch.fromClass(PitchClass.C, 5), PitchDuration.Eighth),
-    Note.fromPitch(Pitch.fromClass(PitchClass.B, 4), PitchDuration.Eighth),
+    Note.fromPitch(Pitch.fromClass(PitchClass.F, 3), PitchDuration.Eighth),
+    Note.fromPitch(Pitch.fromClass(PitchClass.A, 3), PitchDuration.Eighth),
+    Note.fromPitch(Pitch.fromClass(PitchClass.C, 4), PitchDuration.Eighth),
+    Note.fromPitch(Pitch.fromClass(PitchClass.A, 3), PitchDuration.Eighth),
+    Note.fromPitch(Pitch.fromClass(PitchClass.F, 3), PitchDuration.Eighth),
+    Note.fromPitch(Pitch.fromClass(PitchClass.A, 3), PitchDuration.Eighth),
+    Note.fromPitch(Pitch.fromClass(PitchClass.C, 4), PitchDuration.Eighth),
+    Note.fromPitch(Pitch.fromClass(PitchClass.B, 3), PitchDuration.Eighth),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Pitch Match"),
-        backgroundColor: Colors.transparent,
-      ),
-      body: Center(
-        child: ChangeNotifierProvider(
+        appBar: AppBar(
+          elevation: 0.0,
+          backgroundColor: Color(0xFF60b3e7),
+          leading: Ink(
+              child: IconButton(
+                  icon: Icon(Icons.close, color: Color(0xFF376996)),
+                  iconSize: 40,
+                  onPressed: () {
+                    Navigator.pop(context);
+                  })),
+        ),
+        body: ChangeNotifierProvider(
           create: (context) => PitchMatchGame(notes),
-          child: PitchMatchManager(notes: notes)
-        )
-      ),
-      backgroundColor: Color(0xFF7EC0EE),
-    );
+          child: Consumer<PitchMatchGame>(
+            builder: (_, pmState, child) {
+              return AnimatedContainer(
+                child: Center(child: child),
+                duration: Duration(milliseconds: 500),
+                decoration: pmState.isListening ?
+                BoxDecoration(
+                    gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xff60b3e7),
+                          Color(0xff6FC0F2),
+                          Color(0xff7ec0ee),
+                          Color(0xffa1d4f0),
+                          Color(0xfffed2a5),
+                          Color(0xffd58c69),
+                        ]))
+                : BoxDecoration(
+                    gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Color(0xff60b3e7),
+                          Color(0xff7ec0ee),
+                          Color(0xff74c1eb),
+                          Color(0xffa1d4f0)
+                        ]))
+              );
+            },
+            child: PitchMatchManager(notes: notes),
+          ),
+        ));
   }
 }
 
@@ -65,8 +99,7 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
       int numAllowedNotes = (staffSize.width / noteDim).floor();
       var pmState = Provider.of<PitchMatchGame>(context, listen: false);
       pmState.maxStaffNotes = numAllowedNotes;
-      if (pmState.currentStaff == 0)
-        pmState.nextNotes();
+      if (pmState.currentStaff == 0) pmState.nextNotes();
     });
   }
 
@@ -75,70 +108,60 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
     return Column(
       children: <Widget>[
         Expanded(
-          key: staffContainerKey,
-          flex: 6,
-          child: Consumer<PitchMatchGame>(
-            builder: (context, pmState, child) {
-              return PitchMatchStaff(
-                notes: pmState.currentNotes,
-              );
-            },
-          )
-        ),
+            key: staffContainerKey,
+            flex: 6,
+            child: Selector<PitchMatchGame, List<Note>>(
+              selector: (_, pmState) => pmState.currentNotes,
+              builder: (context, notes, child) {
+                return PitchMatchStaff(
+                  notes: notes,
+                );
+              },
+            )),
         Expanded(
           flex: 1,
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: <Widget>[
-              Ink(
-                child: Consumer<PitchMatchGame>(
-                  builder: (context, pmState, child) {
-                    return PitchMatchListener(
-                      notes: pmState.currentNotes
-                    );
-                  }
-                ),
-                decoration: ShapeDecoration(
-                  shape: ContinuousRectangleBorder(
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(25),
-                      bottomLeft: Radius.circular(25)
-                    )
-                  ),
-                  color: Color(0xFFFFAD05)
-                ),
-                height: 60,
-                width: 60,
-              ),
-              Ink(
-                child: Consumer<PitchMatchGame>(
-                    builder: (context, pmState, child) {
-                      return PitchMatchPlayer(
-                        notes: pmState.currentNotes,
-                      );
-                    }
-                ),
-                decoration: ShapeDecoration(
-                    shape: ContinuousRectangleBorder(
-                      borderRadius: BorderRadius.only(
-                          topRight: Radius.circular(25),
-                          bottomRight: Radius.circular(25)
-                      ),
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: <Widget>[
+                Consumer<PitchMatchGame>(builder: (_, pmState, __) {
+                  return Container(
+                    child: PitchMatchListener(notes: pmState.currentNotes),
+                    decoration: ShapeDecoration(
+                        shape: ContinuousRectangleBorder(
+                            side: BorderSide(color: Colors.amber, width: 3),
+                            borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(25),
+                                bottomLeft: Radius.circular(25))),
+                        color: pmState.isListening
+                            ? Theme.of(context).focusColor
+                            : Theme.of(context).buttonColor),
+                    height: 100,
+                    width: 100,
+                  );
+                }),
+                Consumer<PitchMatchGame>(builder: (_, pmState, __) {
+                  return Container(
+                    child: PitchMatchPlayer(
+                      notes: pmState.currentNotes,
                     ),
-                    color: Color(0xFFFFAD05)
-                ),
-                height: 60,
-                width: 60,
-              ),
-            ]
-          ),
+                    decoration: ShapeDecoration(
+                        shape: ContinuousRectangleBorder(
+                            side: BorderSide(color: Colors.amber, width: 3),
+                            borderRadius: BorderRadius.only(
+                                topRight: Radius.circular(25),
+                                bottomRight: Radius.circular(25))),
+                        color: pmState.isPlaying
+                            ? Theme.of(context).focusColor
+                            : Theme.of(context).buttonColor),
+                    height: 100,
+                    width: 100,
+                  );
+                }),
+              ]),
         ),
         Expanded(
           flex: 1,
-          child: CustomPaint(
-            painter: BackgroundPainter(),
-            child: Container()
-          ),
+          child: CustomPaint(painter: BackgroundPainter(), child: Container()),
         )
       ],
     );
@@ -146,7 +169,6 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
 }
 
 class BackgroundPainter extends CustomPainter {
-
   @override
   void paint(Canvas canvas, Size size) {
     Paint paint = Paint();
@@ -172,7 +194,6 @@ class BackgroundPainter extends CustomPainter {
     path2.lineTo(0, size.height);
     path2.lineTo(size.width, size.height);
     canvas.drawPath(path2, paint);
-
   }
 
   @override

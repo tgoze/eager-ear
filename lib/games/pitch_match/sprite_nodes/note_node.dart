@@ -8,7 +8,7 @@ import 'package:spritewidget/spritewidget.dart';
 class NoteNode extends Sprite {
   Note note;
 
-  NoteNode(ui.Image image, this.note): super.fromImage(image);
+  NoteNode(ui.Image image, this.note) : super.fromImage(image);
 
   void animateHopToStaff(Size staffSize, List<Note> notes) {
     // Find staff position
@@ -18,8 +18,8 @@ class NoteNode extends Sprite {
     var randGen = math.Random();
     double offsetBez = ((200 * randGen.nextDouble()) - 100);
     double startDx = endPosition.dx + offsetBez;
-    var startPathPos = Offset(startDx,
-        staffSize.height + staffSize.height * .25);
+    var startPathPos =
+        Offset(startDx, staffSize.height + staffSize.height * .25);
     var endPathPos = Offset(endPosition.dx, endPosition.dy - 25);
     Path entryPath = Path();
     entryPath.moveTo(startPathPos.dx, startPathPos.dy);
@@ -32,13 +32,10 @@ class NoteNode extends Sprite {
 
     var enterMotion = MotionSequence([
       new MotionDelay(randGen.nextDouble() * 1.25),
-      new MotionTween((a) =>
-      position = _findOffsetOnPath(a, entryPath),
-          0.0, 1.0, .5, Curves.linearToEaseOut
-      ),
-      new MotionTween((a) => position = a,
-          endPathPos, endPosition, .1, Curves.bounceOut
-      ),
+      new MotionTween((a) => position = _findOffsetOnPath(a, entryPath), 0.0,
+          1.0, .5, Curves.linearToEaseOut),
+      new MotionTween(
+          (a) => position = a, endPathPos, endPosition, .1, Curves.bounceOut)
     ]);
     motions.run(enterMotion);
   }
@@ -46,20 +43,10 @@ class NoteNode extends Sprite {
   void animatePreviewHop() {
     var startPos = position;
     MotionSequence previewNoteMotion = new MotionSequence([
-      new MotionTween(
-              (a) => position = a,
-          startPos,
-          startPos + Offset(0, -30),
-          0.3,
-          Curves.easeOut
-      ),
-      new MotionTween(
-              (a) => position = a,
-          startPos + Offset(0, -30),
-          startPos,
-          0.3,
-          Curves.bounceOut
-      ),
+      new MotionTween((a) => position = a, startPos, startPos + Offset(0, -30),
+          0.3, Curves.easeOut),
+      new MotionTween((a) => position = a, startPos + Offset(0, -30), startPos,
+          0.3, Curves.bounceOut)
     ]);
     motions.run(previewNoteMotion);
   }
@@ -68,26 +55,38 @@ class NoteNode extends Sprite {
     var randGen = math.Random();
 
     var startPos = position;
-    var endPos = Offset(startPos.dx + (staffSize.width / 4)
-        * randGen.nextDouble() - (staffSize.width / 8),
+    var endPos = Offset(
+        startPos.dx +
+            (staffSize.width / 4) * randGen.nextDouble() -
+            (staffSize.width / 8),
         staffSize.height + staffSize.height * .25);
 
     double offsetBez = ((200 * randGen.nextDouble()) - 100);
 
     Path path = Path();
     path.moveTo(startPos.dx, startPos.dy);
-    path.quadraticBezierTo(startPos.dx + .5 * -offsetBez, startPos.dy - 300,
-        endPos.dx, endPos.dy);
+    path.quadraticBezierTo(
+        startPos.dx + .5 * -offsetBez, startPos.dy - 300, endPos.dx, endPos.dy);
 
     MotionGroup successNoteAnimation = MotionGroup([
-      new MotionTween((a) => position = _findOffsetOnPath(a, path),
-          0.0, 1.0, 1.0, Curves.easeInOutQuad),
-      new MotionRepeat(
-          new MotionTween((a) => rotation = a,
-              0.0, 360.0, 0.2)
-          , 3)
+      new MotionTween((a) => position = _findOffsetOnPath(a, path), 0.0, 1.0,
+          1.0, Curves.easeInOutQuad),
+      new MotionRepeat(new MotionTween((a) => rotation = a, 0.0, 360.0, 0.2), 3)
     ]);
     motions.run(successNoteAnimation);
+  }
+
+  void animateShake(double angleInDeg, double duration) {
+    var shakeAnimation = MotionRepeatForever(new MotionTween(
+        (a) => rotation = angleInDeg * math.sin(a),
+        0.0,
+        2 * math.pi,
+        duration));
+    motions.run(shakeAnimation, "shake");
+  }
+
+  void stopAnimations() {
+    motions.stopAll();
   }
 
   Offset _findOffsetOnStaff(Size staffSize, List<Note> notes) {
@@ -96,7 +95,7 @@ class NoteNode extends Sprite {
     double _topOffset = _noteStep;
 
     // Find bottom offset
-    if (note.pitch.octave == 4 || note.pitch.octave == 5) {
+    if (note.pitch.octave == 3 || note.pitch.octave == 4) {
       switch (note.pitch.pitchClass) {
         case PitchClass.C:
         case PitchClass.CSharp:
@@ -125,10 +124,10 @@ class NoteNode extends Sprite {
           _topOffset += _noteStep * 0;
           break;
         case PitchClass.Unknown:
-        // nothing
+          // nothing
           break;
       }
-      if (note.pitch.octave == 4) {
+      if (note.pitch.octave == 3) {
         _topOffset += _noteStep * 7;
       }
     }

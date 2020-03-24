@@ -10,7 +10,7 @@ class StaffNode extends NodeWithSize {
 
   StaffNode(this.notes, this.staffSize) : super(Size(1024, 1024));
 
-  void addNoteChild(NoteNode child) {
+  void addNoteChild(Sprite child) {
     double noteDim = staffSize.height / 8;
     child.size = Size.square(noteDim);
     child.visible = false;

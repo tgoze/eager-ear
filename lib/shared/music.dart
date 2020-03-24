@@ -20,7 +20,7 @@ const Map _cBasedPitchClassNames = {
   11: 'B',
 };
 
-int _convertHertzToStep(double hertz) {
+int convertHertzToStep(double hertz) {
   int pitchStep = -1;
   if (hertz >= 0) {
     pitchStep = (
@@ -30,8 +30,19 @@ int _convertHertzToStep(double hertz) {
   return pitchStep;
 }
 
+double convertHertzToStepVariance(double hertz) {
+  double pitchStep = -1;
+  if (hertz >= 0) {
+    pitchStep = (
+        12 * (log(hertz/_c0) / log(2))
+    );
+  }
+  var variance = pitchStep - pitchStep.floor();
+  return variance >= .5 ? 1 - variance : variance;
+}
+
 int convertHertzToClassStep(double hertz, PitchClass pitchClass) {
-  int step = _convertHertzToStep(hertz);
+  int step = convertHertzToStep(hertz);
   if (step >= 0)
     step = (step - pitchClass.index) % 12;
   return step;
@@ -84,7 +95,7 @@ String convertPitchClassToString(PitchClass pitchClass, int octave) {
 
 int getOctaveFromHertz(double hertz) {
   int octave = -1;
-  int step = _convertHertzToStep(hertz);
+  int step = convertHertzToStep(hertz);
   if (step >= 0)
     octave = (step / 12).floor();
   return octave;

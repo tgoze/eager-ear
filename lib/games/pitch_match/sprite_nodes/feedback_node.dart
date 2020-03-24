@@ -1,27 +1,51 @@
+import 'dart:developer';
 import 'dart:ui' as ui;
 
 import 'package:flutter/cupertino.dart';
 import 'package:spritewidget/spritewidget.dart';
 
+import 'package:eager_ear/shared/pitch.dart';
 import 'package:eager_ear/shared/music.dart';
 import 'package:eager_ear/shared/note.dart';
 
-class CarrotNode extends Sprite {
-  CarrotNode(ui.Image image) : super.fromImage(image);
+class FeedbackNode extends Sprite {
+  FeedbackNode(ui.Image image) : super.fromImage(image);
 
-  void animateToStaffPosition(Size staffSize, Note note) {
-    var floatAnimation = MotionTween(
-        (a) => position = a, position, _findOffsetOnStaff(staffSize, note), 1);
+  void animateToStaffPosition(Size staffSize, List<double> hertzList) {
+    // TODO: get average pitch with variance and animate
+
+    // Get most common pitch
+    var pitches = hertzList.map<Pitch>((hertz) => Pitch.fromHertz(hertz));
+    var mostCommonPitch = pitches.reduce((prev, next) {
+      if (prev != next) {
+        return pitches
+            .where((pitch) => pitch == next)
+            .length
+            > pitches
+                .where((pitch) => prev == next)
+                .length
+            ? next
+            : prev;
+      } else {
+        return prev;
+      }
+    });
+
+    // Animate to staff
+    var note = Note.fromPitch(mostCommonPitch, PitchDuration.Unknown);
+    var endPos = _findOffsetOnStaff(staffSize, note);
+    var floatAnimation = new MotionTween(
+        (a) => position = a, position, endPos, .5, Curves.fastOutSlowIn);
     motions.run(floatAnimation);
   }
 
   Offset _findOffsetOnStaff(Size staffSize, Note note) {
     double _noteStep = size.height / 2;
-    double _leftOffset = 0;
+    double _leftOffset = size.height / 2;
     double _topOffset = _noteStep;
 
     // Find bottom offset
-    if (note.pitch.octave == 4 || note.pitch.octave == 5) {
+    if (note.pitch.octave == 3 || note.pitch.octave == 4) {
       switch (note.pitch.pitchClass) {
         case PitchClass.C:
         case PitchClass.CSharp:
@@ -53,7 +77,7 @@ class CarrotNode extends Sprite {
           // nothing
           break;
       }
-      if (note.pitch.octave == 4) {
+      if (note.pitch.octave == 3) {
         _topOffset += _noteStep * 7;
       }
     }
