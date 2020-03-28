@@ -101,6 +101,10 @@ int getOctaveFromHertz(double hertz) {
   return octave;
 }
 
+bool isAccidental(PitchClass pitchClass) {
+  return accidentals.contains(pitchClass);
+}
+
 enum PitchClass {
   C, CSharp, D, DSharp, E, F, FSharp, G, GSharp, A, ASharp, B, Unknown
 }
@@ -108,3 +112,11 @@ enum PitchClass {
 enum PitchDuration {
   Whole, Quarter, Eighth, Unknown
 }
+
+List<PitchClass> accidentals = [
+  PitchClass.CSharp,
+  PitchClass.DSharp,
+  PitchClass.FSharp,
+  PitchClass.GSharp,
+  PitchClass.ASharp
+];

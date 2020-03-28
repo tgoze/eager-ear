@@ -87,37 +87,17 @@ class PitchMatchManager extends StatefulWidget {
 }
 
 class _PitchMatchManagerState extends State<PitchMatchManager> {
-  GlobalKey staffContainerKey = GlobalKey();
-
-  @override
-  void initState() {
-    super.initState();
-
-    SchedulerBinding.instance.addPostFrameCallback((_) {
-      var staffSize = staffContainerKey.currentContext.size;
-      var noteDim = staffSize.height / 8;
-      int numAllowedNotes = (staffSize.width / noteDim).floor();
-      var pmState = Provider.of<PitchMatchGame>(context, listen: false);
-      pmState.maxStaffNotes = numAllowedNotes;
-      if (pmState.currentStaff == 0) pmState.nextNotes();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
         Expanded(
-            key: staffContainerKey,
             flex: 6,
-            child: Selector<PitchMatchGame, List<Note>>(
-              selector: (_, pmState) => pmState.currentNotes,
-              builder: (context, notes, child) {
-                return PitchMatchStaff(
-                  notes: notes,
-                );
-              },
-            )),
+            child: LayoutBuilder(builder: (context, constraints) {
+              var staffSize = Size(constraints.maxWidth, constraints.maxHeight);
+              return PitchMatchStaff(staffSize: staffSize);
+            }),
+        ),
         Expanded(
           flex: 1,
           child: Row(

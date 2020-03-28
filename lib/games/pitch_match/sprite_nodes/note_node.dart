@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'package:eager_ear/shared/music.dart';
@@ -7,12 +8,13 @@ import 'package:spritewidget/spritewidget.dart';
 
 class NoteNode extends Sprite {
   Note note;
+  Size staffSize;
 
-  NoteNode(ui.Image image, this.note) : super.fromImage(image);
+  NoteNode(ui.Image image, this.note, this.staffSize) : super.fromImage(image);
 
-  void animateHopToStaff(Size staffSize, List<Note> notes) {
+  void animateHopToStaff(List<Note> notes) {
     // Find staff position
-    Offset endPosition = _findOffsetOnStaff(staffSize, notes);
+    Offset endPosition = _findOffsetOnStaff(notes, false);
 
     // Path to animate sprite on
     var randGen = math.Random();
@@ -51,7 +53,7 @@ class NoteNode extends Sprite {
     motions.run(previewNoteMotion);
   }
 
-  void animateSuccessHop(Size staffSize) {
+  Future<Null> animateSuccessHop() {
     var randGen = math.Random();
 
     var startPos = position;
@@ -68,68 +70,94 @@ class NoteNode extends Sprite {
     path.quadraticBezierTo(
         startPos.dx + .5 * -offsetBez, startPos.dy - 300, endPos.dx, endPos.dy);
 
-    MotionGroup successNoteAnimation = MotionGroup([
-      new MotionTween((a) => position = _findOffsetOnPath(a, path), 0.0, 1.0,
-          1.0, Curves.easeInOutQuad),
-      new MotionRepeat(new MotionTween((a) => rotation = a, 0.0, 360.0, 0.2), 3)
+    var completer = new Completer<Null>(); // For notifying the future
+    var successNoteAnimation = new MotionSequence([
+      new MotionGroup([
+        new MotionTween((a) => position = _findOffsetOnPath(a, path), 0.0, 1.0,
+            1.0, Curves.easeInOutQuad),
+        new MotionRepeat(
+            new MotionTween((a) => rotation = a, 0.0, 360.0, 0.2), 3)
+      ]),
+      new MotionTween((a) => opacity = a, 1.0, 0.0, .5),
+      new MotionCallFunction(() {
+        completer.complete();
+      }),
+      //new MotionRemoveNode(this)
     ]);
     motions.run(successNoteAnimation);
+    return completer.future;
   }
 
   void animateShake(double angleInDeg, double duration) {
-    var shakeAnimation = MotionRepeatForever(new MotionTween(
+    var shakeAnimation = new MotionTween(
         (a) => rotation = angleInDeg * math.sin(a),
         0.0,
         2 * math.pi,
-        duration));
+        duration,
+        Curves.easeIn);
     motions.run(shakeAnimation, "shake");
+  }
+
+  void animateToUprightRotation() {
+    var shakeAnimation =
+        new MotionTween((a) => rotation = a, rotation, 0.0, .3);
+    motions.run(shakeAnimation, "shake");
+  }
+
+  void stopShakeAnimations() {
+    motions.stopWithTag("shake");
   }
 
   void stopAnimations() {
     motions.stopAll();
   }
 
-  Offset _findOffsetOnStaff(Size staffSize, List<Note> notes) {
+  Offset _findOffsetOnStaff(List<Note> notes, isHigh) {
     double _noteStep = size.height / 2;
     double _leftOffset = 0;
     double _topOffset = _noteStep;
 
+    // Set staff octaves
+    int lowOctave = isHigh ? 4 : 3;
+    int highOctave = isHigh ? 5 : 4;
+
     // Find bottom offset
-    if (note.pitch.octave == 3 || note.pitch.octave == 4) {
-      switch (note.pitch.pitchClass) {
-        case PitchClass.C:
-        case PitchClass.CSharp:
-          _topOffset += _noteStep * 6;
-          break;
-        case PitchClass.D:
-        case PitchClass.DSharp:
-          _topOffset += _noteStep * 5;
-          break;
-        case PitchClass.E:
-          _topOffset += _noteStep * 4;
-          break;
-        case PitchClass.F:
-        case PitchClass.FSharp:
-          _topOffset += _noteStep * 3;
-          break;
-        case PitchClass.G:
-        case PitchClass.GSharp:
-          _topOffset += _noteStep * 2;
-          break;
-        case PitchClass.A:
-        case PitchClass.ASharp:
-          _topOffset += _noteStep * 1;
-          break;
-        case PitchClass.B:
-          _topOffset += _noteStep * 0;
-          break;
-        case PitchClass.Unknown:
-          // nothing
-          break;
-      }
-      if (note.pitch.octave == 3) {
-        _topOffset += _noteStep * 7;
-      }
+    switch (note.pitch.pitchClass) {
+      case PitchClass.C:
+      case PitchClass.CSharp:
+        _topOffset += _noteStep * 6;
+        break;
+      case PitchClass.D:
+      case PitchClass.DSharp:
+        _topOffset += _noteStep * 5;
+        break;
+      case PitchClass.E:
+        _topOffset += _noteStep * 4;
+        break;
+      case PitchClass.F:
+      case PitchClass.FSharp:
+        _topOffset += _noteStep * 3;
+        break;
+      case PitchClass.G:
+      case PitchClass.GSharp:
+        _topOffset += _noteStep * 2;
+        break;
+      case PitchClass.A:
+      case PitchClass.ASharp:
+        _topOffset += _noteStep * 1;
+        break;
+      case PitchClass.B:
+        _topOffset += _noteStep * 0;
+        break;
+      case PitchClass.Unknown:
+        // nothing
+        break;
+    }
+    if (note.pitch.octave == lowOctave) {
+      _topOffset += _noteStep * 7;
+    } else if (note.pitch.octave != highOctave) {
+      _topOffset = _noteStep * 14;
+      note.pitch.variance = 0;
     }
 
     // Find left offset

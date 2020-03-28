@@ -1,8 +1,6 @@
 import 'dart:async';
-import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 
 import 'package:permission_handler/permission_handler.dart';
@@ -24,6 +22,7 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
   static const _hertzChannel =
       EventChannel('com.tgconsulting.eager_ear/stream');
   Stream<double> _hertzStream;
+  StreamSubscription _hertzSubscription;
   IconData _micIcon = Icons.mic;
 
   Future<Stream<double>> getHertzStream() async {
@@ -49,81 +48,6 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
     return permissionStatus == PermissionStatus.granted;
   }
 
-//  // Timeout method
-//  void createCheckStream(Pitch testPitch, Stream<Pitch> stream, int noteCounter) async {
-//    var pmState = Provider.of<PitchMatchGame>(context, listen: false);
-//
-//    if (stream != null) {
-//      _pitchSubscription = stream.where((pitch) => pitch != testPitch)
-//        .timeout(Duration(seconds: 1), onTimeout: (timedOut) {
-//          timedOut.add(testPitch);
-//        })
-//        .listen((Pitch pitch) async {
-//          log(pitch.toString());
-//          if (pitch == testPitch) {
-//            log(pitch.toString());
-//
-//            pmState.setSuccessAnimating(noteCounter++);
-//
-//            if (noteCounter == widget.notes.length) {
-//              pmState.nextNotes();
-//              await SchedulerBinding.instance.endOfFrame;
-//              noteCounter = 0;
-//            }
-//
-//            if (widget.notes.isEmpty) {
-//              _pitchSubscription.cancel();
-//              _cancelListener();
-//              return;
-//            }
-//
-//            testPitch = widget.notes[noteCounter].pitch;
-//            await _pitchSubscription.cancel();
-//            createCheckStream(testPitch, stream, noteCounter);
-//          }
-//        });
-//    } else {
-//      return null;
-//    }
-//  }
-
-  // TODO: make this a while loop?
-  void _checkStream(
-      Pitch testPitch, int noteCounter, PitchMatchGame pmState, Stopwatch sw) {
-    sw.start();
-    if (_hertzStream != null) {
-      _hertzStream
-          .takeWhile((hertz) => sw.elapsedMilliseconds < 1000)
-          .map((hertz) => Pitch.fromHertz(hertz))
-          .toList()
-          .then((pitches) async {
-        sw.stop();
-        sw.reset();
-
-        if (_isCorrect(testPitch, pitches)) {
-          pmState.setSuccessAnimating(noteCounter++);
-          log("good");
-        }
-        log("bad");
-
-        if (noteCounter == widget.notes.length) {
-          pmState.nextNotes();
-          await SchedulerBinding.instance.endOfFrame;
-          noteCounter = 0;
-        }
-
-        if (widget.notes.isEmpty) {
-          _cancelListener();
-          return;
-        }
-
-        _checkStream(widget.notes[noteCounter].pitch, noteCounter, pmState, sw);
-      });
-    } else {
-      return;
-    }
-  }
-
   bool _isCorrect(Pitch testPitch, List<Pitch> pitches) {
     var correctPitches = pitches.where((pitch) => pitch == testPitch);
     var percentCorrect = correctPitches.toList().length / pitches.length;
@@ -141,37 +65,67 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
         _micIcon = Icons.mic_none;
       });
 
-      // Transform heard audio stream
-      pmState.setHeardHertzStream(_hertzStream
-          .transform(StreamTransformer.fromBind((hzStream) async* {
-            while (_hertzStream != null) {
-              var hzReadings = await hzStream.take(15).toList();
-              yield hzReadings;
+      if (_hertzStream != null) {
+        var bufferedStream = _hertzStream.transform<List<double>>(
+            StreamTransformer.fromBind((hzStream) async* {
+          while (_hertzStream != null) {
+            var hzReadings = await hzStream.take(10).toList();
+            yield hzReadings;
+          }
+        })).asBroadcastStream();
+
+        // Set heard audio stream
+        pmState.setHeardHertzStream(bufferedStream);
+
+        int _noteIndexCounter = 0;
+        Pitch currentPitch;
+        var sw = new Stopwatch();
+        bool correctHeard = false;
+        var heardHertzBuffer = List<double>();
+        _hertzSubscription = _hertzStream.listen((hertz) {
+          currentPitch = pmState.totalNotes[_noteIndexCounter].pitch;
+          var heardPitch = Pitch.fromHertz(hertz);
+          if (correctHeard && sw.elapsedMilliseconds <= 1000) {
+            heardHertzBuffer.add(hertz);
+          } else if (sw.elapsedMilliseconds > 1000) {
+            var heardPitches = heardHertzBuffer
+                .map<Pitch>((hertz) => Pitch.fromHertz(hertz))
+                .toList();
+            if (_isCorrect(currentPitch, heardPitches)) {
+              pmState.setCurrentNote(_noteIndexCounter++);
+              if (_noteIndexCounter == pmState.totalNotes.length) {
+                _cancelListener(pmState);
+              }
+            }
+            heardHertzBuffer.clear();
+            correctHeard = false;
+            sw.stop();
+            sw.reset();
+          } else {
+            correctHeard = heardPitch == currentPitch;
+            pmState.wasCorrectHeard(correctHeard);
+            if (correctHeard) {
+              sw.start();
+            }
+            else {
+              sw.stop();
+              sw.reset();
             }
           }
-      )));
-
-      if (_hertzStream != null) {
-        int _noteIndexCounter = 0;
-        var testPitch = widget.notes[_noteIndexCounter].pitch;
-
-        var stopwatch = new Stopwatch();
-
-        _checkStream(testPitch, _noteIndexCounter, pmState, stopwatch);
-        //createCheckStream(testPitch, _pitchStream, _noteIndexCounter);
+        });
       } else {
         // Audio access not granted
       }
     } else {
-      _cancelListener();
-      pmState.setIsListening(false);
-      pmState.setHeardHertzStream(null);
+      _cancelListener(pmState);
     }
   }
 
-  void _cancelListener() {
+  void _cancelListener(PitchMatchGame pmState) {
     _hertzStream = null;
-    //_hertzSubscription.cancel();
+    _hertzSubscription.cancel();
+    pmState.setIsListening(false);
+    pmState.setHeardHertzStream(null);
     setState(() {
       _micIcon = Icons.mic;
     });
@@ -193,6 +147,6 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
   void dispose() {
     super.dispose();
     _hertzStream = null;
-    //_hertzSubscription.cancel();
+    _hertzSubscription?.cancel();
   }
 }

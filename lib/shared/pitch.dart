@@ -6,6 +6,7 @@ class Pitch {
   int octave;
   double hertz;
   double variance;
+  bool accidental;
 
   Pitch();
 
@@ -13,6 +14,7 @@ class Pitch {
     this.pitchClass = pitchClass;
     this.octave = octave;
     this.pitchClassString = convertPitchClassToString(pitchClass, octave);
+    this.accidental = isAccidental(pitchClass);
   }
 
   Pitch.fromHertz(double hertz) {
@@ -21,6 +23,7 @@ class Pitch {
     this.octave = getOctaveFromHertz(hertz);
     this.hertz = hertz;
     this.variance = convertHertzToStepVariance(hertz);
+    this.accidental = isAccidental(this.pitchClass);
   }
 
   @override

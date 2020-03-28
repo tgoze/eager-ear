@@ -24,7 +24,7 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
     var pmState = Provider.of<PitchMatchGame>(context, listen: false);
     if (player.isPlaying.value) {
       player.stop();
-      pmState.setPreviewAnimating(-1);
+      pmState.setPreviewNote(-1);
       pmState.setIsPlaying(false);
       setState(() { _listenButtonIcon = Icons.play_arrow; });
     } else {
@@ -41,7 +41,7 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
 
     player.playlistCurrent.listen((playlistPlayingAudio) {
       Provider.of<PitchMatchGame>(context, listen: false)
-          .setPreviewAnimating(playlistPlayingAudio.index);
+          .setPreviewNote(playlistPlayingAudio.index);
     });
 
     player.playlistAudioFinished.listen((playlistAudio) {

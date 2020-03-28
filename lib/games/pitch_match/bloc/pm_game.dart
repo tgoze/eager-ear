@@ -9,11 +9,12 @@ class PitchMatchGame extends ChangeNotifier {
   final List<Note> _currentNotes = [];
   int maxStaffNotes;
   int currentStaff;
-  ValueNotifier previewAnimating = ValueNotifier<int>(-1);
-  ValueNotifier successAnimating = ValueNotifier<int>(-1);
+  ValueNotifier previewNote = ValueNotifier<int>(-1);
+  ValueNotifier currentNote = ValueNotifier<int>(-1);
   bool isListening;
   bool isPlaying;
   Stream<List<double>> heardHertzStream;
+  ValueNotifier correctHeard = ValueNotifier<bool>(false);
 
   List<Note> get currentNotes => List.from(_currentNotes);
 
@@ -34,12 +35,12 @@ class PitchMatchGame extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setPreviewAnimating(int newIndex) {
-    previewAnimating.value = newIndex;
+  void setPreviewNote(int newIndex) {
+    previewNote.value = newIndex;
   }
 
-  void setSuccessAnimating(int newIndex) {
-    successAnimating.value = newIndex;
+  void setCurrentNote(int newIndex) {
+    currentNote.value = newIndex;
   }
 
   void setIsListening(bool isListening) {
@@ -55,5 +56,9 @@ class PitchMatchGame extends ChangeNotifier {
   void setHeardHertzStream(Stream<List<double>> heardHertzStream) {
     this.heardHertzStream = heardHertzStream;
     notifyListeners();
+  }
+
+  void wasCorrectHeard(bool correctHeard) {
+    this.correctHeard.value = correctHeard;
   }
 }
