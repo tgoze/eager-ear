@@ -72,12 +72,12 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
             var hzReadings = await hzStream.take(10).toList();
             yield hzReadings;
           }
-        })).asBroadcastStream();
+        }));
 
         // Set heard audio stream
         pmState.setHeardHertzStream(bufferedStream);
 
-        int _noteIndexCounter = 0;
+        int _noteIndexCounter = pmState.currentNote.value + 1;
         Pitch currentPitch;
         var sw = new Stopwatch();
         bool correctHeard = false;

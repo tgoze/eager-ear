@@ -13,6 +13,7 @@ class PitchMatchGame extends ChangeNotifier {
   ValueNotifier currentNote = ValueNotifier<int>(-1);
   bool isListening;
   bool isPlaying;
+  bool isComplete;
   Stream<List<double>> heardHertzStream;
   ValueNotifier correctHeard = ValueNotifier<bool>(false);
 
@@ -22,6 +23,7 @@ class PitchMatchGame extends ChangeNotifier {
     currentStaff = 0;
     isListening = false;
     isPlaying = false;
+    isComplete = false;
   }
 
   void nextNotes() {
@@ -50,6 +52,11 @@ class PitchMatchGame extends ChangeNotifier {
 
   void setIsPlaying(bool isPlaying) {
     this.isPlaying = isPlaying;
+    notifyListeners();
+  }
+
+  void setIsComplete(bool isComplete) {
+    this.isComplete = isComplete;
     notifyListeners();
   }
 

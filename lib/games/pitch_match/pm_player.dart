@@ -28,7 +28,9 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
       pmState.setIsPlaying(false);
       setState(() { _listenButtonIcon = Icons.play_arrow; });
     } else {
+      var currentIndex = (pmState.currentNote.value + 1) % pmState.maxStaffNotes;
       player.openPlaylist(Playlist(assetAudioPaths: _audioPaths));
+      player.playlistPlayAtIndex(currentIndex);
       pmState.setIsPlaying(true);
       pmState.setIsListening(false);
       setState(() { _listenButtonIcon = Icons.stop; });

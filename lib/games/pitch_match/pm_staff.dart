@@ -103,7 +103,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
           _heardHertzSprite.animateToStaffPosition(staffSize, dx, hertzList);
         });
       }
-      if (!pmState.isListening) {
+      if (!pmState.isListening && _heardHertzSubscription != null) {
         _heardHertzSubscription?.cancel();
         _heardHertzSubscription = null;
         _heardHertzSprite?.animateExit(staffSize);
