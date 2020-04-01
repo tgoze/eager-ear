@@ -21,13 +21,18 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
   var _audioPaths = List<String>();
 
   void _playOrStopMelody() {
+    var pmState = Provider.of<PitchMatchGame>(context, listen: false);
     if (player.isPlaying.value) {
       player.stop();
-      Provider.of<PitchMatchGame>(context, listen: false)
-          .setPreviewAnimating(-1);
+      pmState.setPreviewNote(-1);
+      pmState.setIsPlaying(false);
       setState(() { _listenButtonIcon = Icons.play_arrow; });
     } else {
+      var currentIndex = (pmState.currentNote.value + 1) % pmState.maxStaffNotes;
       player.openPlaylist(Playlist(assetAudioPaths: _audioPaths));
+      player.playlistPlayAtIndex(currentIndex);
+      pmState.setIsPlaying(true);
+      pmState.setIsListening(false);
       setState(() { _listenButtonIcon = Icons.stop; });
     }
   }
@@ -38,13 +43,16 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
 
     player.playlistCurrent.listen((playlistPlayingAudio) {
       Provider.of<PitchMatchGame>(context, listen: false)
-          .setPreviewAnimating(playlistPlayingAudio.index);
+          .setPreviewNote(playlistPlayingAudio.index);
     });
 
     player.playlistAudioFinished.listen((playlistAudio) {
       if (playlistAudio.playlist.assetAudioPaths.length ==
-            playlistAudio.index + 1)
+            playlistAudio.index + 1) {
         setState(() { _listenButtonIcon = Icons.play_arrow; });
+        Provider.of<PitchMatchGame>(context, listen: false)
+            .setIsPlaying(false);
+      }
     });
   }
 
@@ -58,12 +66,15 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
       });
     }
 
-    return IconButton(
-      icon: Icon(_listenButtonIcon),
-      iconSize: 36.0,
-      onPressed: _playOrStopMelody,
-      color: Colors.white
+    return Consumer<PitchMatchGame>(
+      builder: (context, pmState, child) {
+        return IconButton(
+            icon: Icon(_listenButtonIcon),
+            iconSize: 36.0,
+            onPressed: pmState.isListening ? null: _playOrStopMelody,
+            disabledColor: Colors.white70
+        );
+      }
     );
   }
-
 }

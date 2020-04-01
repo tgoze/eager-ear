@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
+import 'package:eager_ear/games/pitch_match/sprite_nodes/feedback_node.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:spritewidget/spritewidget.dart';
 
@@ -13,18 +17,9 @@ import 'package:eager_ear/games/pitch_match/sprite_nodes/staff_node.dart';
 import 'package:provider/provider.dart';
 
 class PitchMatchStaff extends StatefulWidget {
-  PitchMatchStaff({
-    Key key,
-    this.notes,
-    this.previewIndex,
-    this.successIndex,
-    this.backgroundSize,
-  }) : super(key: key);
+  PitchMatchStaff({Key key, this.staffSize}) : super(key: key);
 
-  final List<Note> notes;
-  final ValueNotifier previewIndex;
-  final ValueNotifier successIndex;
-  final Size backgroundSize;
+  final Size staffSize;
 
   @override
   State<StatefulWidget> createState() => new _PitchMatchStaffState();
@@ -35,12 +30,15 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
   GlobalKey staffKey = GlobalKey();
   bool _assetsLoaded = false;
   ImageMap _noteImages;
+  FeedbackNode _heardHertzSprite;
+  StreamSubscription _heardHertzSubscription;
 
   Future<Null> _loadNoteAssets() async {
     ImageMap noteImages = new ImageMap(rootBundle);
     await noteImages.load(<String>[
       'assets/images/bunny.png',
-      'assets/images/turtle.png'
+      'assets/images/turtle.png',
+      'assets/images/carrot.png'
     ]);
     _noteImages = noteImages;
   }
@@ -49,7 +47,10 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
   void initState() {
     super.initState();
 
-    rootStaffNode = StaffNode(null, null);
+    var pmState = Provider.of<PitchMatchGame>(context, listen: false);
+    var noteDim = widget.staffSize.height / 8;
+    int numAllowedNotes = (widget.staffSize.width / noteDim).floor();
+    pmState.maxStaffNotes = numAllowedNotes;
 
     _loadNoteAssets().then((_) {
       setState(() {
@@ -57,68 +58,112 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
       });
     });
 
-    var pmState = Provider.of<PitchMatchGame>(context, listen: false);
+    rootStaffNode = StaffNode(widget.staffSize);
 
-    pmState.previewAnimating.addListener(() {
-      int newIndex = pmState.previewAnimating.value;
-      if (newIndex < widget.notes.length && newIndex >= 0) {
-        NoteNode noteNode = rootStaffNode.children[newIndex];
+    // Listener to animate preview hop
+    pmState.previewNote.addListener(() {
+      int newIndex = pmState.previewNote.value;
+      if (newIndex < pmState.currentNotes.length && newIndex >= 0) {
+        NoteNode noteNode = rootStaffNode.getNotes()[newIndex];
         noteNode.animatePreviewHop();
       }
     });
 
-    pmState.successAnimating.addListener(() {
-      NoteNode noteNode = rootStaffNode.children[pmState.successAnimating.value];
-      noteNode.animateSuccessHop(staffKey.currentContext.size);
+    // Listener to give feedback on note node
+    pmState.correctHeard.addListener(() {
+      var index = (pmState.currentNote.value + 1) % pmState.maxStaffNotes;
+      NoteNode noteNode = rootStaffNode.getNotes()[index];
+      if (pmState.correctHeard.value)
+        noteNode.animateShake(30, 1.0);
+      else
+        noteNode.stopShakeAnimations();
+    });
+
+    // Listener to animate success hop
+    pmState.currentNote.addListener(() async {
+      var index = pmState.currentNote.value % pmState.maxStaffNotes;
+      NoteNode noteNode = rootStaffNode.getNotes()[index];
+      noteNode.stopShakeAnimations();
+      await noteNode.animateSuccessHop();
+      if (index == pmState.maxStaffNotes - 1)
+        pmState.nextNotes();
+      if (pmState.currentNote.value + 1 == pmState.totalNotes.length)
+        pmState.setIsComplete(true);
+    });
+
+    // Listener for feedback node
+    pmState.addListener(() {
+      var staffSize = staffKey.currentContext.size;
+      if (pmState.heardHertzStream != null && _heardHertzSubscription == null) {
+        _heardHertzSubscription = pmState.heardHertzStream.listen((hertzList) {
+          if (_heardHertzSprite.hidden) {
+            Sprite firstNoteSprite = rootStaffNode.getNotes()[0];
+            _heardHertzSprite.animateEntryToStaff(
+                staffSize, firstNoteSprite.position.dx);
+          }
+          var index = (pmState.currentNote.value + 1) % pmState.maxStaffNotes;
+          double dx = rootStaffNode.getNotes()[index].position.dx;
+          _heardHertzSprite.animateToStaffPosition(staffSize, dx, hertzList);
+        });
+      }
+      if (!pmState.isListening && _heardHertzSubscription != null) {
+        _heardHertzSubscription?.cancel();
+        _heardHertzSubscription = null;
+        _heardHertzSprite?.animateExit(staffSize);
+      }
+    });
+
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      pmState.nextNotes();
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    if(rootStaffNode.children.isNotEmpty)
-      rootStaffNode.removeAllChildren();
-
     return Container(
-        child: Stack(
-          key: staffKey,
-          children: <Widget>[
-            Padding (
+      key: staffKey,
+      child: Selector<PitchMatchGame, List<Note>>(
+          selector: (_, pmState) => pmState.currentNotes,
+          builder: (context, notes, child) {
+            if (_assetsLoaded && rootStaffNode != null) {
+              if (rootStaffNode.getNotes() != null)
+                rootStaffNode.removeNotes();
+
+              ui.Image image;
+              for (Note note in notes) {
+                switch (note.duration) {
+                  case PitchDuration.Eighth:
+                    image = _noteImages['assets/images/bunny.png'];
+                    break;
+                  default:
+                    image = _noteImages['assets/images/bunny.png'];
+                    break;
+                }
+                var noteNode = NoteNode(image, note, widget.staffSize);
+                rootStaffNode.addNoteChild(noteNode);
+                noteNode.animateHopToStaff(notes);
+              }
+
+              // Add heard hertz carrot sprite
+              if (!rootStaffNode.hasFeedbackNode()) {
+                var heardHertzImage = _noteImages['assets/images/carrot.png'];
+                _heardHertzSprite = FeedbackNode(heardHertzImage);
+                rootStaffNode.addNoteChild(_heardHertzSprite);
+              }
+            }
+            return Padding(
                 padding: EdgeInsets.fromLTRB(8.0, 0.0, 8.0, 0.0),
                 child: CustomPaint(
                   painter: new StaffPainter(),
                   child: Container(
-                    constraints: BoxConstraints.tight(MediaQuery.of(context).size),
+                    constraints:
+                        BoxConstraints.tight(MediaQuery.of(context).size),
+                    child: child,
                   ),
-                )
-            ),
-            LayoutBuilder(
-              builder: (context, constraints) {
-                if (_assetsLoaded) {
-                  var staffSize = Size(constraints.maxWidth, constraints.maxHeight);
-                  rootStaffNode = StaffNode(widget.notes, staffSize);
-                  ui.Image image;
-                  for (Note note in widget.notes) {
-                    switch (note.duration) {
-                      case PitchDuration.Eighth:
-                        image = _noteImages['assets/images/bunny.png'];
-                        break;
-                      default:
-                        image = _noteImages['assets/images/bunny.png'];
-                        break;
-                    }
-                    var noteNode = NoteNode(image, note);
-                    rootStaffNode.addNoteChild(noteNode);
-                    noteNode.animateHopToStaff(staffSize, widget.notes);
-                  }
-                }
-                return SpriteWidget(
-                    rootStaffNode,
-                    SpriteBoxTransformMode.nativePoints
-                );
-              }
-            )
-          ],
-        ),
+                ));
+          },
+          child: SpriteWidget(
+              rootStaffNode, SpriteBoxTransformMode.nativePoints)),
     );
   }
 }
