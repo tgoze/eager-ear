@@ -1,6 +1,7 @@
+import 'package:eager_ear/games/pitch_match/pm_home.dart';
 import 'package:flutter/material.dart';
 
-import 'package:eager_ear/games/pitch_match/main.dart';
+import 'package:eager_ear/games/pitch_match/pm_main.dart';
 
 void main() => runApp(MyApp());
 
@@ -10,7 +11,8 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Eager Ear',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primaryColor: Colors.amber,
+        accentColor: Colors.lightBlue,
         buttonColor: Colors.amber[600],
         focusColor: Colors.amber[700],
         iconTheme: IconThemeData(
@@ -48,7 +50,7 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => PitchMatchMain())
+                  MaterialPageRoute(builder: (context) => PitchMatchHome())
                 );
               },
             )

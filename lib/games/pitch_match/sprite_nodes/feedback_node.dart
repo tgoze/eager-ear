@@ -65,6 +65,7 @@ class FeedbackNode extends Sprite {
     mostCommonPitch.variance /= mostCommonPitches.length;
 
     // Animate to staff
+    zPosition = 100.0;
     var note = Note.fromPitch(mostCommonPitch, PitchDuration.Unknown);
     var endPos = _findOffsetOnStaff(staffSize, dx, note, false);
     var newRotation = note.pitch.accidental ? 45.0 : 0.0;

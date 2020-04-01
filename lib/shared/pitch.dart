@@ -1,5 +1,9 @@
 import 'package:eager_ear/shared/music.dart';
+import 'package:json_annotation/json_annotation.dart';
 
+part 'pitch.g.dart';
+
+@JsonSerializable()
 class Pitch {
   PitchClass pitchClass;
   String pitchClassString;
@@ -8,7 +12,13 @@ class Pitch {
   double variance;
   bool accidental;
 
-  Pitch();
+  Pitch(
+      {this.pitchClass,
+      this.pitchClassString,
+      this.octave,
+      this.hertz,
+      this.variance,
+      this.accidental});
 
   Pitch.fromClass(PitchClass pitchClass, int octave) {
     this.pitchClass = pitchClass;
@@ -27,14 +37,17 @@ class Pitch {
   }
 
   @override
-  String toString(){
+  String toString() {
     return pitchClassString + octave.toString();
   }
 
   @override
-  bool operator ==(covariant Pitch other) =>
-    pitchClass == other.pitchClass;
+  bool operator ==(covariant Pitch other) => pitchClass == other.pitchClass;
 
   @override
   int get hashCode => pitchClass.hashCode;
+
+  factory Pitch.fromJson(Map<String, dynamic> json) => _$PitchFromJson(json);
+
+  Map<String, dynamic> toJson() => _$PitchToJson(this);
 }

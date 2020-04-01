@@ -85,7 +85,10 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
       NoteNode noteNode = rootStaffNode.getNotes()[index];
       noteNode.stopShakeAnimations();
       await noteNode.animateSuccessHop();
-      if (index == pmState.maxStaffNotes - 1) pmState.nextNotes();
+      if (index == pmState.maxStaffNotes - 1)
+        pmState.nextNotes();
+      if (pmState.currentNote.value + 1 == pmState.totalNotes.length)
+        pmState.setIsComplete(true);
     });
 
     // Listener for feedback node
