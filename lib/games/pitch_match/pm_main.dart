@@ -131,7 +131,7 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
     return Column(
       children: <Widget>[
         Expanded(
-            flex: 6,
+            flex: 8,
             child: LayoutBuilder(builder: (context, constraints) {
               var staffSize = Size(constraints.maxWidth, constraints.maxHeight);
               return PitchMatchStaff(staffSize: staffSize);

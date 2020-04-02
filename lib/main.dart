@@ -1,7 +1,6 @@
+import 'package:eager_ear/games/muisc_maker/mm_home.dart';
 import 'package:eager_ear/games/pitch_match/pm_home.dart';
 import 'package:flutter/material.dart';
-
-import 'package:eager_ear/games/pitch_match/pm_main.dart';
 
 void main() => runApp(MyApp());
 
@@ -51,6 +50,15 @@ class _MyHomePageState extends State<MyHomePage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => PitchMatchHome())
+                );
+              },
+            ),
+            RaisedButton(
+              child: Text("Music Maker"),
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => MusicMakerHome())
                 );
               },
             )
