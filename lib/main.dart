@@ -16,7 +16,7 @@ class MyApp extends StatelessWidget {
         focusColor: Colors.amber[700],
         iconTheme: IconThemeData(
           color: Colors.white
-        )
+        ),
       ),
       home: MyHomePage(title: 'Eager Ear Home'),
     );

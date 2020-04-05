@@ -20,6 +20,31 @@ const Map _cBasedPitchClassNames = {
   11: 'B',
 };
 
+const Map staffPitchClasses = {
+  0: PitchClass.B,
+  1: PitchClass.A,
+  2: PitchClass.G,
+  3: PitchClass.F,
+  4: PitchClass.E,
+  5: PitchClass.D,
+  6: PitchClass.C
+};
+
+const Map staffSteps = {
+  PitchClass.B: 0,
+  PitchClass.A: 1,
+  PitchClass.ASharp: 1,
+  PitchClass.G: 2,
+  PitchClass.GSharp: 2,
+  PitchClass.F: 3,
+  PitchClass.FSharp: 3,
+  PitchClass.E: 4,
+  PitchClass.D: 5,
+  PitchClass.DSharp: 5,
+  PitchClass.C: 6,
+  PitchClass.CSharp: 6
+};
+
 int convertHertzToStep(double hertz) {
   int pitchStep = -1;
   if (hertz >= 0) {
@@ -110,13 +135,23 @@ enum PitchClass {
 }
 
 enum PitchDuration {
-  Whole, Quarter, Eighth, Unknown
+  Whole, Half, Quarter, Eighth, Unknown
 }
 
-List<PitchClass> accidentals = [
+const List<PitchClass> accidentals = [
   PitchClass.CSharp,
   PitchClass.DSharp,
   PitchClass.FSharp,
   PitchClass.GSharp,
   PitchClass.ASharp
 ];
+
+const Map relativeAccidentals = {
+  PitchClass.B: PitchClass.ASharp,
+  PitchClass.C: PitchClass.CSharp,
+  PitchClass.D: PitchClass.DSharp,
+  PitchClass.E: PitchClass.DSharp,
+  PitchClass.F: PitchClass.FSharp,
+  PitchClass.G: PitchClass.GSharp,
+  PitchClass.A: PitchClass.ASharp,
+};

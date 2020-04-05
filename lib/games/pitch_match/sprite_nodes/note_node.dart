@@ -162,7 +162,7 @@ class NoteNode extends Sprite {
 
     // Find left offset
     int spaces = notes.length + 1;
-    _leftOffset = ((staffSize.width - 16) / spaces);
+    _leftOffset = ((staffSize.width) / spaces);
     _leftOffset *= (notes.indexOf(note) + 1);
 
     return Offset(_leftOffset, _topOffset);

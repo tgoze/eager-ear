@@ -85,8 +85,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
       NoteNode noteNode = rootStaffNode.getNotes()[index];
       noteNode.stopShakeAnimations();
       await noteNode.animateSuccessHop();
-      if (index == pmState.maxStaffNotes - 1)
-        pmState.nextNotes();
+      if (index == pmState.maxStaffNotes - 1) pmState.nextNotes();
       if (pmState.currentNote.value + 1 == pmState.totalNotes.length)
         pmState.setIsComplete(true);
     });
@@ -126,8 +125,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
           selector: (_, pmState) => pmState.currentNotes,
           builder: (context, notes, child) {
             if (_assetsLoaded && rootStaffNode != null) {
-              if (rootStaffNode.getNotes() != null)
-                rootStaffNode.removeNotes();
+              if (rootStaffNode.getNotes() != null) rootStaffNode.removeNotes();
 
               ui.Image image;
               for (Note note in notes) {
@@ -151,19 +149,16 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
                 rootStaffNode.addNoteChild(_heardHertzSprite);
               }
             }
-            return Padding(
-                padding: EdgeInsets.fromLTRB(8.0, 0.0, 8.0, 0.0),
-                child: CustomPaint(
-                  painter: new StaffPainter(),
-                  child: Container(
-                    constraints:
-                        BoxConstraints.tight(MediaQuery.of(context).size),
-                    child: child,
-                  ),
-                ));
+            return CustomPaint(
+              painter: new StaffPainter(),
+              child: Container(
+                constraints: BoxConstraints.tight(MediaQuery.of(context).size),
+                child: child,
+              ),
+            );
           },
-          child: SpriteWidget(
-              rootStaffNode, SpriteBoxTransformMode.nativePoints)),
+          child:
+              SpriteWidget(rootStaffNode, SpriteBoxTransformMode.nativePoints)),
     );
   }
 }

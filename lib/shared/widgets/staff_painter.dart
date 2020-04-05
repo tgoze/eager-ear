@@ -17,8 +17,8 @@ class StaffPainter extends CustomPainter {
 
     for(int i = 0; i < lines; i++) {
       canvas.drawLine(
-        Offset(0, startY + (spacing * i)),
-        Offset(size.width, startY + (spacing * i)),
+        Offset(8.0, startY + (spacing * i)),
+        Offset(size.width - 8.0, startY + (spacing * i)),
         paint,
       );
     }
