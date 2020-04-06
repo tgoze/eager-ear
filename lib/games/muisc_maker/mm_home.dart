@@ -80,8 +80,10 @@ class MusicMakerHome extends StatelessWidget {
                           ),
                         ),
                         onDismissed: (dismissDirection) {
-                          Firestore.instance.runTransaction((transaction) async {
-                            DocumentSnapshot freshSnap = await transaction.get(document.reference);
+                          Firestore.instance
+                              .runTransaction((transaction) async {
+                            DocumentSnapshot freshSnap =
+                                await transaction.get(document.reference);
                             await transaction.delete(freshSnap.reference);
                           });
                         },
@@ -95,7 +97,8 @@ class MusicMakerHome extends StatelessWidget {
                                 content: SingleChildScrollView(
                                   child: ListBody(
                                     children: <Widget>[
-                                      Text('Are you sure you want to delete?')
+                                      Text(
+                                          'Are you sure you want to delete ${document['title']}?')
                                     ],
                                   ),
                                 ),
