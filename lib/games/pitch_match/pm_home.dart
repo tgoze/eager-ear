@@ -46,18 +46,25 @@ class PitchMatchHome extends StatelessWidget {
               icon: Icon(Icons.settings), iconSize: 40, onPressed: () {}),
         ],
       ),
-      body: StreamBuilder(
-          stream: Firestore.instance.collection('melodies').snapshots(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData)
-              return Center(child: CircularProgressIndicator());
-            return ListView.builder(
-                itemCount: snapshot.data.documents.length,
-                itemBuilder: (context, index) {
-                  return _buildMelodyItem(
-                      context, snapshot.data.documents[index]);
-                });
-          }),
+      body: Center(
+        child: StreamBuilder(
+            stream: Firestore.instance.collection('melodies').snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData)
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    CircularProgressIndicator()
+                  ],
+                );
+              return ListView.builder(
+                  itemCount: snapshot.data.documents.length,
+                  itemBuilder: (context, index) {
+                    return _buildMelodyItem(
+                        context, snapshot.data.documents[index]);
+                  });
+            }),
+      ),
     );
   }
 }
