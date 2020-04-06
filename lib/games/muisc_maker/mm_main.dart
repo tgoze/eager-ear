@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import 'package:eager_ear/shared/music.dart';
@@ -6,17 +7,38 @@ import 'package:eager_ear/shared/note.dart';
 import 'package:eager_ear/shared/widgets/staff_painter.dart';
 
 class MusicMakerMain extends StatelessWidget {
+  MusicMakerMain({this.notes, this.documentId}): super();
+
+  final List<Note> notes;
+  final String documentId;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(),
-      body: Center(child: MusicMakerManager()),
+      body: Center(
+          child: Container(
+            child: MusicMakerManager(notes: notes),
+            decoration: BoxDecoration(
+                gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                  Color(0xff60b3e7),
+                  Color(0xff7ec0ee),
+                  Color(0xff74c1eb),
+                  Color(0xffa1d4f0)
+                ])),
+      )),
     );
   }
 }
 
 class MusicMakerManager extends StatefulWidget {
-  MusicMakerManager({Key key}) : super(key: key);
+  MusicMakerManager({Key key, this.notes, this.documentId}) : super(key: key);
+
+  final List<Note> notes;
+  final String documentId;
 
   @override
   State<StatefulWidget> createState() => new _MusicMakerManagerState();
@@ -24,9 +46,11 @@ class MusicMakerManager extends StatefulWidget {
 
 class _MusicMakerManagerState extends State<MusicMakerManager> {
   GlobalKey staffKey = new GlobalKey();
-  List<Note> _notes = new List<Note>();
+  List<Note> _notes;
   List<Note> _initialNoteTypes = new List<Note>();
   ScrollController _scrollController = new ScrollController();
+  bool _isDragging = false;
+  bool _isOverTrash = false;
 
   Widget _fadeInImage(BuildContext context, Widget child, int frame,
       bool wasSynchronouslyLoaded) {
@@ -62,12 +86,18 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
               height: constraints.maxHeight / 8,
               width: constraints.maxHeight / 8)
           : Image.asset(imagePath, frameBuilder: _fadeInImage),
-      onDragStarted: () =>
-          _notes.contains(note) ? null : _scrollToEndOfMelody(),
-      onDragCompleted: () =>
-          _notes.contains(note) ? null : _scrollToEndOfMelody(),
+      onDragStarted: () {
+        if (!_notes.contains(note)) _scrollToEndOfMelody();
+        setState(() {
+          _isDragging = true;
+        });
+      },
       onDragEnd: (DraggableDetails dragDetails) {
-        if (dragDetails.wasAccepted) {
+        setState(() {
+          _isDragging = false;
+        });
+        if (dragDetails.wasAccepted &&
+            staffKey.currentContext.size.contains(dragDetails.offset)) {
           Size localSize = staffKey.currentContext.size;
           RenderBox renderBox = staffKey.currentContext.findRenderObject();
           Offset localOffset = renderBox.globalToLocal(dragDetails.offset);
@@ -78,6 +108,7 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
             _notes[_notes.indexOf(note)] = newNote;
           } else {
             _notes.add(newNote);
+            _scrollToEndOfMelody();
           }
           setState(() {});
         }
@@ -115,7 +146,7 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
     return Note.fromPitch(pitch, duration);
   }
 
-  Offset _alignmentFromNote(Note note, BoxConstraints constraints) {
+  Offset _offsetFromNote(Note note, BoxConstraints constraints) {
     var step = staffSteps[note.pitch.pitchClass];
     if (note.pitch.octave == 3) {
       step += 7;
@@ -135,6 +166,7 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
 
   @override
   void initState() {
+    _notes = widget.notes;
     super.initState();
     _initialNoteTypes = [
       Note.fromPitch(Pitch(accidental: false), PitchDuration.Quarter),
@@ -149,34 +181,29 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
     return Column(
       children: <Widget>[
         Expanded(
-            flex: 8,
+            flex: 6,
             key: staffKey,
             child: Stack(children: <Widget>[
               LayoutBuilder(builder: (context, constraints) {
                 return CustomPaint(
                   painter: new StaffPainter(),
-                  child: GestureDetector(
-                    onVerticalDragUpdate: (DragUpdateDetails dragDetails) {
-                      print(dragDetails.localPosition);
-                    },
-                    child: ListView.builder(
-                        controller: _scrollController,
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _notes.length,
-                        itemBuilder: (context, index) {
-                          return Column(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            children: <Widget>[
-                              Transform.translate(
-                                child: _createDraggableNoteWidget(_notes[index],
-                                    constraints: constraints),
-                                offset: _alignmentFromNote(
-                                    _notes[index], constraints),
-                              )
-                            ],
-                          );
-                        }),
-                  ),
+                  child: ListView.builder(
+                      controller: _scrollController,
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _notes.length,
+                      itemBuilder: (context, index) {
+                        return Column(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: <Widget>[
+                            Transform.translate(
+                              child: _createDraggableNoteWidget(_notes[index],
+                                  constraints: constraints),
+                              offset:
+                                  _offsetFromNote(_notes[index], constraints),
+                            )
+                          ],
+                        );
+                      }),
                 );
               }),
               DragTarget<Note>(
@@ -188,15 +215,80 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
               ),
             ])),
         Expanded(
-          flex: 2,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: <Widget>[
-              Expanded(child: _createDraggableNoteWidget(_initialNoteTypes[0])),
-              Expanded(child: _createDraggableNoteWidget(_initialNoteTypes[1])),
-              Expanded(child: _createDraggableNoteWidget(_initialNoteTypes[2])),
-              Expanded(child: _createDraggableNoteWidget(_initialNoteTypes[3])),
-            ],
+          flex: 1,
+          child: LayoutBuilder(builder: (context, constraints) {
+            double deleteIconHeight = constraints.biggest.height * .75;
+            double feedBackCircleRadius = constraints.biggest.height * .5;
+            return Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  AnimatedOpacity(
+                    duration: Duration(milliseconds: 500),
+                    opacity: _isDragging ? 1.0 : 0.0,
+                    child: DragTarget<Note>(
+                      builder: (BuildContext context, List<Note> candidateData,
+                          List rejectedCandidateData) {
+                        return AnimatedContainer(
+                            duration: Duration(milliseconds: 300),
+                            curve: Curves.elasticInOut,
+                            decoration: ShapeDecoration(
+                                shape: CircleBorder(),
+                                shadows: [
+                                  BoxShadow(
+                                      color: Colors.red[600],
+                                      spreadRadius: _isOverTrash
+                                          ? feedBackCircleRadius
+                                          : 0.0),
+                                ]),
+                            child: Icon(Icons.delete, size: deleteIconHeight));
+                      },
+                      onWillAccept: (note) {
+                        _isOverTrash = true;
+                        setState(() {});
+                        return true;
+                      },
+                      onAccept: (note) {
+                        _isOverTrash = false;
+                        if (_notes.contains(note)) {
+                          _notes.remove(note);
+                        }
+                        setState(() {});
+                      },
+                      onLeave: (note) {
+                        _isOverTrash = false;
+                      },
+                    ),
+                  ),
+                ]);
+          }),
+        ),
+        Expanded(
+          flex: 1,
+          child: Container(
+            padding: EdgeInsets.all(5),
+            decoration: ShapeDecoration(
+              shape: ContinuousRectangleBorder(
+                borderRadius: BorderRadius.only(
+                  topRight: Radius.circular(50),
+                  topLeft: Radius.circular(50)
+                ),
+                side: BorderSide(width: 5.0, color: Theme.of(context).buttonColor)
+              ),
+              color: Theme.of(context).buttonColor.withOpacity(.5),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: <Widget>[
+                Expanded(
+                    child: _createDraggableNoteWidget(_initialNoteTypes[0])),
+                Expanded(
+                    child: _createDraggableNoteWidget(_initialNoteTypes[1])),
+                Expanded(
+                    child: _createDraggableNoteWidget(_initialNoteTypes[2])),
+                Expanded(
+                    child: _createDraggableNoteWidget(_initialNoteTypes[3])),
+              ],
+            ),
           ),
         )
       ],

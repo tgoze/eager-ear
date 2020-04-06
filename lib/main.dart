@@ -10,10 +10,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Eager Ear',
       theme: ThemeData(
-        primaryColor: Colors.amber,
-        accentColor: Colors.lightBlue,
-        buttonColor: Colors.amber[600],
-        focusColor: Colors.amber[700],
+        primaryColor: Color(0xFFFF5E00),
+        accentColor: Color(0xFFFF6E19),
+        buttonColor: Color(0xFF00B3B2),
+        focusColor: Color(0xFF00FFFE),
         iconTheme: IconThemeData(
           color: Colors.white
         ),

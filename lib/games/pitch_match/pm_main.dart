@@ -147,13 +147,13 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
                     child: PitchMatchListener(notes: pmState.currentNotes),
                     decoration: ShapeDecoration(
                         shape: ContinuousRectangleBorder(
-                            side: BorderSide(color: Colors.amber, width: 3),
+                            side: BorderSide(color: Theme.of(context).primaryColor, width: 3),
                             borderRadius: BorderRadius.only(
                                 topLeft: Radius.circular(25),
                                 bottomLeft: Radius.circular(25))),
                         color: pmState.isListening
-                            ? Theme.of(context).focusColor
-                            : Theme.of(context).buttonColor),
+                            ? Theme.of(context).primaryColor
+                            : Theme.of(context).accentColor),
                     height: 100,
                     width: 100,
                   );
@@ -165,13 +165,13 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
                     ),
                     decoration: ShapeDecoration(
                         shape: ContinuousRectangleBorder(
-                            side: BorderSide(color: Colors.amber, width: 3),
+                            side: BorderSide(color: Theme.of(context).primaryColor, width: 3),
                             borderRadius: BorderRadius.only(
                                 topRight: Radius.circular(25),
                                 bottomRight: Radius.circular(25))),
                         color: pmState.isPlaying
-                            ? Theme.of(context).focusColor
-                            : Theme.of(context).buttonColor),
+                            ? Theme.of(context).primaryColor
+                            : Theme.of(context).accentColor),
                     height: 100,
                     width: 100,
                   );
