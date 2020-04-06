@@ -41,28 +41,44 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
     );
   }
 
-  Widget _createDraggableNoteWidget(Note noteTemplate) {
-    var imagePath = _imagePathFromNote(noteTemplate);
+  Widget _createDraggableNoteWidget(Note note, {BoxConstraints constraints}) {
+    String imagePath = _imagePathFromNote(note);
     return Draggable(
+      maxSimultaneousDrags: 1,
       feedback: Image(
         image: AssetImage(imagePath),
         height: 60,
         width: 60,
       ),
-      child: Image.asset(imagePath, frameBuilder: _fadeInImage),
-      data: noteTemplate,
-      onDragStarted: () => _scrollToEndOfMelody(),
-      onDragCompleted: () => _scrollToEndOfMelody(),
+      child: _notes.contains(note)
+          ? Image(
+              image: AssetImage(_imagePathFromNote(note)),
+              height: constraints.maxHeight / 8,
+              width: constraints.maxHeight / 8)
+          : Image.asset(imagePath, frameBuilder: _fadeInImage),
+      data: note,
+      childWhenDragging: _notes.contains(note)
+          ? Container(
+              height: constraints.maxHeight / 8,
+              width: constraints.maxHeight / 8)
+          : Image.asset(imagePath, frameBuilder: _fadeInImage),
+      onDragStarted: () =>
+          _notes.contains(note) ? null : _scrollToEndOfMelody(),
+      onDragCompleted: () =>
+          _notes.contains(note) ? null : _scrollToEndOfMelody(),
       onDragEnd: (DraggableDetails dragDetails) {
         if (dragDetails.wasAccepted) {
           Size localSize = staffKey.currentContext.size;
           RenderBox renderBox = staffKey.currentContext.findRenderObject();
           Offset localOffset = renderBox.globalToLocal(dragDetails.offset);
           var percent = ((localOffset.dy + 30) / localSize.height);
-          var newNote = _noteFromDrag(
-              percent, noteTemplate.pitch.accidental, noteTemplate.duration);
-          print(newNote.pitch.pitchClass);
-          _notes.add(newNote);
+          var newNote =
+              _noteFromDrag(percent, note.pitch.accidental, note.duration);
+          if (_notes.contains(note)) {
+            _notes[_notes.indexOf(note)] = newNote;
+          } else {
+            _notes.add(newNote);
+          }
           setState(() {});
         }
       },
@@ -99,13 +115,13 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
     return Note.fromPitch(pitch, duration);
   }
 
-  Alignment _alignmentFromNote(Note note) {
+  Offset _alignmentFromNote(Note note, BoxConstraints constraints) {
     var step = staffSteps[note.pitch.pitchClass];
     if (note.pitch.octave == 3) {
       step += 7;
     }
-    var verticalAlignment = (step - 7) / 7;
-    return Alignment(0.0, verticalAlignment);
+    double verticalOffset = (constraints.maxHeight / 16) * step;
+    return Offset(0.0, verticalOffset);
   }
 
   void _scrollToEndOfMelody() {
@@ -139,18 +155,25 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
               LayoutBuilder(builder: (context, constraints) {
                 return CustomPaint(
                   painter: new StaffPainter(),
-                  child: Container(
+                  child: GestureDetector(
+                    onVerticalDragUpdate: (DragUpdateDetails dragDetails) {
+                      print(dragDetails.localPosition);
+                    },
                     child: ListView.builder(
                         controller: _scrollController,
                         scrollDirection: Axis.horizontal,
                         itemCount: _notes.length,
                         itemBuilder: (context, index) {
-                          return Image(
-                            image:
-                                AssetImage(_imagePathFromNote(_notes[index])),
-                            height: constraints.maxHeight / 8,
-                            width: constraints.maxHeight / 8,
-                            alignment: _alignmentFromNote(_notes[index]),
+                          return Column(
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            children: <Widget>[
+                              Transform.translate(
+                                child: _createDraggableNoteWidget(_notes[index],
+                                    constraints: constraints),
+                                offset: _alignmentFromNote(
+                                    _notes[index], constraints),
+                              )
+                            ],
                           );
                         }),
                   ),
@@ -161,12 +184,7 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
                     List rejectedCandidateData) {
                   return Container();
                 },
-                onWillAccept: (data) {
-                  return true;
-                },
-                onAccept: (data) {
-                  //print(data);
-                },
+                onWillAccept: (data) => true,
               ),
             ])),
         Expanded(
