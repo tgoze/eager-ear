@@ -1,3 +1,4 @@
+import 'package:eager_ear/shared/constants.dart';
 import 'package:flutter/material.dart';
 
 import 'package:assets_audio_player/assets_audio_player.dart';
@@ -62,7 +63,7 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
 
     for (Note note in widget.notes) {
       setState(() {
-        _audioPaths.add("assets/audio/bunny/" + note.pitch.toString() + ".wav");
+        _audioPaths.add(getAudioPathFromNote(note));
       });
     }
 

@@ -1,43 +1,55 @@
-import 'package:flutter/cupertino.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
+import 'package:eager_ear/games/muisc_maker/bloc/mm_state.dart';
+import 'package:eager_ear/games/muisc_maker/mm_action_bar.dart';
+import 'package:eager_ear/shared/simple_melody.dart';
 import 'package:eager_ear/shared/music.dart';
 import 'package:eager_ear/shared/pitch.dart';
 import 'package:eager_ear/shared/note.dart';
 import 'package:eager_ear/shared/widgets/staff_painter.dart';
+import 'package:eager_ear/shared/constants.dart';
 
 class MusicMakerMain extends StatelessWidget {
-  MusicMakerMain({this.notes, this.documentId}): super();
+  MusicMakerMain({this.melody, this.documentReference}) : super();
 
-  final List<Note> notes;
-  final String documentId;
+  final SimpleMelody melody;
+  final DocumentReference documentReference;
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(),
-      body: Center(
-          child: Container(
-            child: MusicMakerManager(notes: notes),
-            decoration: BoxDecoration(
-                gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                  Color(0xff60b3e7),
-                  Color(0xff7ec0ee),
-                  Color(0xff74c1eb),
-                  Color(0xffa1d4f0)
-                ])),
-      )),
+    return ChangeNotifierProvider(
+      create: (context) => MusicMakerState(
+          melody: melody,
+          documentReference: documentReference,
+          modified: false
+      ),
+      child: Scaffold(
+          appBar: MusicMakerActionBar(),
+          resizeToAvoidBottomPadding: false,
+          body: Center(
+            child: Container(
+              child: MusicMakerManager(melody: melody),
+                decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                      Color(0xff60b3e7),
+                      Color(0xff7ec0ee),
+                      Color(0xff74c1eb),
+                      Color(0xffa1d4f0)
+                    ])),
+          ))),
     );
   }
 }
 
 class MusicMakerManager extends StatefulWidget {
-  MusicMakerManager({Key key, this.notes, this.documentId}) : super(key: key);
+  MusicMakerManager({Key key, this.melody, this.documentId}) : super(key: key);
 
-  final List<Note> notes;
+  final SimpleMelody melody;
   final String documentId;
 
   @override
@@ -66,7 +78,7 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
   }
 
   Widget _createDraggableNoteWidget(Note note, {BoxConstraints constraints}) {
-    String imagePath = _imagePathFromNote(note);
+    String imagePath = getImagePathFromNote(note);
     return Draggable(
       maxSimultaneousDrags: 1,
       feedback: Image(
@@ -76,7 +88,7 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
       ),
       child: _notes.contains(note)
           ? Image(
-              image: AssetImage(_imagePathFromNote(note)),
+              image: AssetImage(getImagePathFromNote(note)),
               height: constraints.maxHeight / 8,
               width: constraints.maxHeight / 8)
           : Image.asset(imagePath, frameBuilder: _fadeInImage),
@@ -105,10 +117,9 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
           var newNote =
               _noteFromDrag(percent, note.pitch.accidental, note.duration);
           if (_notes.contains(note)) {
-            _notes[_notes.indexOf(note)] = newNote;
+            updateMelody(newNote, _notes.indexOf(note));
           } else {
-            _notes.add(newNote);
-            _scrollToEndOfMelody();
+            addToMelody(newNote);
           }
           setState(() {});
         }
@@ -116,33 +127,39 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
     );
   }
 
-  String _imagePathFromNote(Note note) {
-    switch (note.duration) {
-      case PitchDuration.Whole:
-      case PitchDuration.Half:
-        if (note.pitch.accidental) return 'assets/images/turtle_sharp.png';
-        return 'assets/images/turtle.png';
-      case PitchDuration.Eighth:
-      case PitchDuration.Quarter:
-        if (note.pitch.accidental) return 'assets/images/bunny_sharp.png';
-        return 'assets/images/bunny.png';
-      default:
-        return '';
+  void addToMelody(Note note) {
+    var mmState = Provider.of<MusicMakerState>(context, listen: false);
+    mmState.addNote(note);
+    _scrollToEndOfMelody();
+  }
+
+  void updateMelody(Note newNote, int indexOfOldNote) {
+    var mmState = Provider.of<MusicMakerState>(context, listen: false);
+    mmState.editNote(newNote, indexOfOldNote);
+  }
+
+  void deleteFromMelody(Note note) {
+    var mmState = Provider.of<MusicMakerState>(context, listen: false);
+    if (_notes.contains(note)) {
+      mmState.removeNote(note);
     }
   }
 
   Note _noteFromDrag(
       double percentOffset, bool isAccidental, PitchDuration duration) {
-    Pitch pitch = new Pitch(accidental: isAccidental);
+    PitchClass pitchClass;
+    int octave;
     int noteStep = (percentOffset * 15).round();
     if (noteStep > 6) {
-      pitch.octave = 3;
+      octave = 3;
     } else {
-      pitch.octave = 4;
+      octave = 4;
     }
-    pitch.pitchClass = staffPitchClasses[noteStep % 7];
-    if (pitch.accidental)
-      pitch.pitchClass = relativeAccidentals[pitch.pitchClass];
+    pitchClass = staffPitchClasses[noteStep % 7];
+    if (isAccidental)
+      pitchClass = relativeAccidentals[pitchClass];
+    var pitch = Pitch.fromClass(pitchClass, octave);
+    pitch.accidental = isAccidental;
     return Note.fromPitch(pitch, duration);
   }
 
@@ -166,7 +183,7 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
 
   @override
   void initState() {
-    _notes = widget.notes;
+    _notes = widget.melody.notes;
     super.initState();
     _initialNoteTypes = [
       Note.fromPitch(Pitch(accidental: false), PitchDuration.Quarter),
@@ -249,9 +266,7 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
                       },
                       onAccept: (note) {
                         _isOverTrash = false;
-                        if (_notes.contains(note)) {
-                          _notes.remove(note);
-                        }
+                        deleteFromMelody(note);
                         setState(() {});
                       },
                       onLeave: (note) {
@@ -268,12 +283,11 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
             padding: EdgeInsets.all(5),
             decoration: ShapeDecoration(
               shape: ContinuousRectangleBorder(
-                borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(50),
-                  topLeft: Radius.circular(50)
-                ),
-                side: BorderSide(width: 5.0, color: Theme.of(context).buttonColor)
-              ),
+                  borderRadius: BorderRadius.only(
+                      topRight: Radius.circular(50),
+                      topLeft: Radius.circular(50)),
+                  side: BorderSide(
+                      width: 5.0, color: Theme.of(context).buttonColor)),
               color: Theme.of(context).buttonColor.withOpacity(.5),
             ),
             child: Row(

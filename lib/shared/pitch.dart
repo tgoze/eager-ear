@@ -1,5 +1,6 @@
-import 'package:eager_ear/shared/music.dart';
 import 'package:json_annotation/json_annotation.dart';
+
+import 'package:eager_ear/shared/music.dart';
 
 part 'pitch.g.dart';
 

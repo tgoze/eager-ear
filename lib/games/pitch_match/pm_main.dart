@@ -96,9 +96,9 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
               ],
             ),
           ),
-          shape: BeveledRectangleBorder(
+          shape: ContinuousRectangleBorder(
               borderRadius: BorderRadius.all(
-                  Radius.circular(5)
+                  Radius.circular(50)
               )
           ),
           actions: <Widget>[

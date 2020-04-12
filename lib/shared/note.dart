@@ -4,7 +4,7 @@ import 'package:json_annotation/json_annotation.dart';
 
 part 'note.g.dart';
 
-@JsonSerializable()
+@JsonSerializable(explicitToJson: true)
 class Note {
   Note({this.pitch, this.duration});
 

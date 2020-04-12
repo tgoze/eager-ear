@@ -16,7 +16,7 @@ Note _$NoteFromJson(Map<String, dynamic> json) {
 }
 
 Map<String, dynamic> _$NoteToJson(Note instance) => <String, dynamic>{
-      'pitch': instance.pitch,
+      'pitch': instance.pitch?.toJson(),
       'duration': _$PitchDurationEnumMap[instance.duration],
     };
 
@@ -54,6 +54,7 @@ T _$enumDecodeNullable<T>(
 
 const _$PitchDurationEnumMap = {
   PitchDuration.Whole: 'Whole',
+  PitchDuration.Half: 'Half',
   PitchDuration.Quarter: 'Quarter',
   PitchDuration.Eighth: 'Eighth',
   PitchDuration.Unknown: 'Unknown',
