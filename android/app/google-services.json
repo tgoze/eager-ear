@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "689980033777",
+    "firebase_url": "https://eager-ear.firebaseio.com",
+    "project_id": "eager-ear",
+    "storage_bucket": "eager-ear.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:689980033777:android:cdf4de47cec9d9b008f750",
+        "android_client_info": {
+          "package_name": "com.tgconsulting.eager_ear"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "689980033777-1o4og63a510gfq4tun78b4g1303sa0lu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAY4FG0dDHpuPlrwVrEI3er28T98ccT9S4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "689980033777-1o4og63a510gfq4tun78b4g1303sa0lu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

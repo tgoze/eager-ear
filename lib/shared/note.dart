@@ -1,8 +1,12 @@
 import 'package:eager_ear/shared/music.dart';
 import 'package:eager_ear/shared/pitch.dart';
+import 'package:json_annotation/json_annotation.dart';
 
+part 'note.g.dart';
+
+@JsonSerializable(explicitToJson: true)
 class Note {
-  Note();
+  Note({this.pitch, this.duration});
 
   Note.fromPitch(Pitch pitch, PitchDuration pitchDuration) {
     this.pitch = pitch;
@@ -16,4 +20,8 @@ class Note {
 
   Pitch pitch;
   PitchDuration duration;
+
+  factory Note.fromJson(Map<String, dynamic> json) => _$NoteFromJson(json);
+
+  Map<String, dynamic> toJson() => _$NoteToJson(this);
 }

@@ -7,20 +7,45 @@ final double _c0 = _a4 * pow(2, -4.75);
 
 const Map _cBasedPitchClassNames = {
   0: 'C',
-  1: 'C#',
+  1: 'CSharp',
   2: 'D',
-  3: 'D#',
+  3: 'DSharp',
   4: 'E',
   5: 'F',
-  6: 'F#',
+  6: 'FSharp',
   7: 'G',
-  8: 'G#',
+  8: 'GSharp',
   9: 'A',
-  10: 'A#',
+  10: 'ASharp',
   11: 'B',
 };
 
-int _convertHertzToStep(double hertz) {
+const Map staffPitchClasses = {
+  0: PitchClass.B,
+  1: PitchClass.A,
+  2: PitchClass.G,
+  3: PitchClass.F,
+  4: PitchClass.E,
+  5: PitchClass.D,
+  6: PitchClass.C
+};
+
+const Map staffSteps = {
+  PitchClass.B: 0,
+  PitchClass.A: 1,
+  PitchClass.ASharp: 1,
+  PitchClass.G: 2,
+  PitchClass.GSharp: 2,
+  PitchClass.F: 3,
+  PitchClass.FSharp: 3,
+  PitchClass.E: 4,
+  PitchClass.D: 5,
+  PitchClass.DSharp: 5,
+  PitchClass.C: 6,
+  PitchClass.CSharp: 6
+};
+
+int convertHertzToStep(double hertz) {
   int pitchStep = -1;
   if (hertz >= 0) {
     pitchStep = (
@@ -30,8 +55,19 @@ int _convertHertzToStep(double hertz) {
   return pitchStep;
 }
 
+double convertHertzToStepVariance(double hertz) {
+  double pitchStep = -1;
+  if (hertz >= 0) {
+    pitchStep = (
+        12 * (log(hertz/_c0) / log(2))
+    );
+  }
+  var variance = pitchStep - pitchStep.floor();
+  return variance >= .5 ? 1 - variance : variance;
+}
+
 int convertHertzToClassStep(double hertz, PitchClass pitchClass) {
-  int step = _convertHertzToStep(hertz);
+  int step = convertHertzToStep(hertz);
   if (step >= 0)
     step = (step - pitchClass.index) % 12;
   return step;
@@ -78,12 +114,20 @@ String convertHertzToPitchClassString(double hertz) {
   return pitchClassString;
 }
 
+String convertPitchClassToString(PitchClass pitchClass, int octave) {
+  return _cBasedPitchClassNames[pitchClass.index];
+}
+
 int getOctaveFromHertz(double hertz) {
   int octave = -1;
-  int step = _convertHertzToStep(hertz);
+  int step = convertHertzToStep(hertz);
   if (step >= 0)
     octave = (step / 12).floor();
   return octave;
+}
+
+bool isAccidental(PitchClass pitchClass) {
+  return accidentals.contains(pitchClass);
 }
 
 enum PitchClass {
@@ -91,5 +135,23 @@ enum PitchClass {
 }
 
 enum PitchDuration {
-  Whole, Quarter, Eighth, Unknown
+  Whole, Half, Quarter, Eighth, Unknown
 }
+
+const List<PitchClass> accidentals = [
+  PitchClass.CSharp,
+  PitchClass.DSharp,
+  PitchClass.FSharp,
+  PitchClass.GSharp,
+  PitchClass.ASharp
+];
+
+const Map relativeAccidentals = {
+  PitchClass.B: PitchClass.ASharp,
+  PitchClass.C: PitchClass.CSharp,
+  PitchClass.D: PitchClass.DSharp,
+  PitchClass.E: PitchClass.DSharp,
+  PitchClass.F: PitchClass.FSharp,
+  PitchClass.G: PitchClass.GSharp,
+  PitchClass.A: PitchClass.ASharp,
+};

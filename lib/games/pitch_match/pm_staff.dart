@@ -1,134 +1,154 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
+import 'dart:ui' as ui;
 
+import 'package:eager_ear/games/pitch_match/sprite_nodes/feedback_node.dart';
+import 'package:eager_ear/shared/constants.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart';
+import 'package:spritewidget/spritewidget.dart';
+
+import 'bloc/pm_game.dart';
 import 'package:eager_ear/shared/music.dart';
 import 'package:eager_ear/shared/note.dart';
+import 'package:eager_ear/shared/widgets/staff_painter.dart';
+import 'package:eager_ear/games/pitch_match/sprite_nodes/note_node.dart';
+import 'package:eager_ear/games/pitch_match/sprite_nodes/staff_node.dart';
+import 'package:provider/provider.dart';
 
 class PitchMatchStaff extends StatefulWidget {
-  PitchMatchStaff({Key key, this.notes}) : super(key: key);
+  PitchMatchStaff({Key key, this.staffSize}) : super(key: key);
 
-  final List<Note> notes;
+  final Size staffSize;
 
   @override
   State<StatefulWidget> createState() => new _PitchMatchStaffState();
 }
 
 class _PitchMatchStaffState extends State<PitchMatchStaff> {
-  double _staffHeight = 400;
-  double _noteDim = 50;
-  double _noteStep;
-  var _staffWidgets = List<Widget>();
+  StaffNode rootStaffNode;
+  GlobalKey staffKey = GlobalKey();
+  bool _assetsLoaded = false;
+  ImageMap _noteImages;
+  FeedbackNode _heardHertzSprite;
+  StreamSubscription _heardHertzSubscription;
 
-  void _addNoteToStaff(Note note, int noteIndex) {
-    double _bottomOffset = 0.0;
-    double _leftOffset = 0.0;
-
-    _leftOffset += noteIndex * _noteDim;
-
-    if (note.pitch.octave == 4 || note.pitch.octave == 5) {
-      switch (note.pitch.pitchClass) {
-        case PitchClass.C:
-        case PitchClass.CSharp:
-          _bottomOffset += _noteStep;
-          break;
-        case PitchClass.D:
-        case PitchClass.DSharp:
-          _bottomOffset += _noteStep * 2;
-          break;
-        case PitchClass.E:
-          _bottomOffset += _noteStep * 3;
-          break;
-        case PitchClass.F:
-        case PitchClass.FSharp:
-          _bottomOffset += _noteStep * 4;
-          break;
-        case PitchClass.G:
-        case PitchClass.GSharp:
-          _bottomOffset += _noteStep * 5;
-          break;
-        case PitchClass.A:
-        case PitchClass.ASharp:
-          _bottomOffset += _noteStep * 6;
-          break;
-        case PitchClass.B:
-          _bottomOffset += _noteStep * 7;
-          break;
-        case PitchClass.Unknown:
-        // nothing
-          break;
-      }
-      if (note.pitch.octave == 5) {
-        _bottomOffset += _noteStep * 7;
-      }
-    }
-
-    _staffWidgets.add(
-        Positioned(
-          child: Container(
-              height: _noteDim,
-              width: _noteDim,
-              child: Image.asset('assets/images/rabbit.png')
-          ),
-          left: _leftOffset,
-          bottom: _bottomOffset,
-        )
-    );
+  Future<Null> _loadNoteAssets() async {
+    ImageMap noteImages = new ImageMap(rootBundle);
+    await noteImages.load(noteImagePaths);
+    _noteImages = noteImages;
   }
 
   @override
   void initState() {
     super.initState();
-    _noteStep = _noteDim / 2.0;
-    _staffWidgets.add(
-        Padding (
-            padding: EdgeInsets.fromLTRB(8.0, 0.0, 8.0, 0.0),
-            child: CustomPaint(
-                painter: new StaffPainter(),
-                child: Container(height: _staffHeight)
-            )
-        )
-    );
 
-    for(Note note in widget.notes) {
-      _addNoteToStaff(note, widget.notes.indexOf(note));
-    }
+    var pmState = Provider.of<PitchMatchGame>(context, listen: false);
+    var noteDim = widget.staffSize.height / 8;
+    int numAllowedNotes = (widget.staffSize.width / noteDim).floor();
+    pmState.maxStaffNotes = numAllowedNotes;
+
+    _loadNoteAssets().then((_) {
+      setState(() {
+        _assetsLoaded = true;
+      });
+    });
+
+    rootStaffNode = StaffNode(widget.staffSize);
+
+    // Listener to animate preview hop
+    pmState.previewNote.addListener(() {
+      int newIndex = pmState.previewNote.value;
+      if (newIndex < pmState.currentNotes.length && newIndex >= 0) {
+        NoteNode noteNode = rootStaffNode.getNotes()[newIndex];
+        noteNode.animatePreviewHop();
+      }
+    });
+
+    // Listener to give feedback on note node
+    pmState.correctHeard.addListener(() {
+      var index = (pmState.currentNote.value + 1) % pmState.maxStaffNotes;
+      NoteNode noteNode = rootStaffNode.getNotes()[index];
+      if (pmState.correctHeard.value)
+        noteNode.animateShake(30, 1.0);
+      else
+        noteNode.stopShakeAnimations();
+    });
+
+    // Listener to animate success hop
+    pmState.currentNote.addListener(() async {
+      var index = pmState.currentNote.value % pmState.maxStaffNotes;
+      NoteNode noteNode = rootStaffNode.getNotes()[index];
+      noteNode.stopShakeAnimations();
+      await noteNode.animateSuccessHop();
+      if (index == pmState.maxStaffNotes - 1) pmState.nextNotes();
+      if (pmState.currentNote.value + 1 == pmState.totalNotes.length)
+        pmState.setIsComplete(true);
+    });
+
+    // Listener for feedback node
+    pmState.addListener(() {
+      var staffSize = staffKey.currentContext.size;
+      if (pmState.heardHertzStream != null && _heardHertzSubscription == null) {
+        _heardHertzSubscription = pmState.heardHertzStream.listen((hertzList) {
+          if (_heardHertzSprite.hidden) {
+            Sprite firstNoteSprite = rootStaffNode.getNotes()[0];
+            _heardHertzSprite.animateEntryToStaff(
+                staffSize, firstNoteSprite.position.dx);
+          }
+          var index = (pmState.currentNote.value + 1) % pmState.maxStaffNotes;
+          double dx = rootStaffNode.getNotes()[index].position.dx;
+          _heardHertzSprite.animateToStaffPosition(staffSize, dx, hertzList);
+        });
+      }
+      if (!pmState.isListening && _heardHertzSubscription != null) {
+        _heardHertzSubscription?.cancel();
+        _heardHertzSubscription = null;
+        _heardHertzSprite?.animateExit(staffSize);
+      }
+    });
+
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      pmState.nextNotes();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-        child: Stack(
-            children: _staffWidgets
-        )
+    return Container(
+      key: staffKey,
+      child: Selector<PitchMatchGame, List<Note>>(
+          selector: (_, pmState) => pmState.currentNotes,
+          builder: (context, notes, child) {
+            if (_assetsLoaded && rootStaffNode != null) {
+              if (rootStaffNode.getNotes() != null) rootStaffNode.removeNotes();
+
+              ui.Image image;
+              for (Note note in notes) {
+                image = _noteImages[getImagePathFromNote(note)];
+                var noteNode = NoteNode(image, note, widget.staffSize);
+                rootStaffNode.addNoteChild(noteNode);
+                noteNode.animateHopToStaff(notes);
+              }
+
+              // Add heard hertz carrot sprite
+              if (!rootStaffNode.hasFeedbackNode()) {
+                var heardHertzImage = _noteImages[feedbackImagePath];
+                _heardHertzSprite = FeedbackNode(heardHertzImage);
+                rootStaffNode.addNoteChild(_heardHertzSprite);
+              }
+            }
+            return CustomPaint(
+              painter: new StaffPainter(),
+              child: Container(
+                constraints: BoxConstraints.tight(MediaQuery.of(context).size),
+                child: child,
+              ),
+            );
+          },
+          child:
+              SpriteWidget(rootStaffNode, SpriteBoxTransformMode.nativePoints)),
     );
-  }
-}
-
-class StaffPainter extends CustomPainter {
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    Paint paint = Paint();
-
-    paint.color = Colors.teal;
-    paint.strokeWidth = 5;
-
-    int spaces = 8;
-    int lines = 5;
-    double spacing = size.height / spaces;
-
-    double startY = 2 * spacing;
-
-    for(int i = 0; i < lines; i++) {
-      canvas.drawLine(
-        Offset(0, startY + (spacing * i)),
-        Offset(size.width, startY + (spacing * i)),
-        paint,
-      );
-    }
-  }
-
-  @override
-  bool shouldRepaint(CustomPainter oldDelegate) {
-    return false;
   }
 }
