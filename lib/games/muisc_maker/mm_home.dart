@@ -3,12 +3,12 @@ import 'dart:ffi';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eager_ear/games/muisc_maker/mm_main.dart';
 import 'package:eager_ear/shared/note.dart';
+import 'package:eager_ear/shared/simple_melody.dart';
 import 'package:flutter/material.dart';
 
 class MusicMakerHome extends StatelessWidget {
   Widget _buildMelodyItem(BuildContext context, DocumentSnapshot document) {
-    var notes =
-        (document['notes'] as List).map((json) => Note.fromJson(json)).toList();
+    SimpleMelody melody = SimpleMelody.fromJson(document.data);
     return GestureDetector(
       child: Card(
         child: Column(
@@ -25,9 +25,25 @@ class MusicMakerHome extends StatelessWidget {
             context,
             MaterialPageRoute(
                 builder: (context) => MusicMakerMain(
-                    notes: notes, documentId: document.documentID)));
+                    melody: melody, documentReference: document.reference)));
       },
     );
+  }
+
+  void _deleteMelody(DocumentSnapshot document) {
+    Firestore.instance.runTransaction((transaction) async {
+      DocumentSnapshot newSnap = await transaction.get(document.reference);
+      await transaction.delete(newSnap.reference);
+    });
+  }
+
+  void _createNewMelody(BuildContext context) {
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => MusicMakerMain(
+                melody: SimpleMelody(notes: [], title: 'New Melody'),
+                documentReference: null)));
   }
 
   @override
@@ -43,10 +59,6 @@ class MusicMakerHome extends StatelessWidget {
             onPressed: () {
               Navigator.pop(context);
             }),
-        actions: <Widget>[
-          IconButton(
-              icon: Icon(Icons.settings), iconSize: 40, onPressed: () {}),
-        ],
       ),
       body: Center(
         child: StreamBuilder(
@@ -71,22 +83,15 @@ class MusicMakerHome extends StatelessWidget {
                             children: <Widget>[
                               Container(
                                 padding: const EdgeInsets.all(8.0),
-                                child: Text('DELETE',
-                                    style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold)),
+                                child: Icon(Icons.delete)
                               )
                             ],
                           ),
                         ),
                         onDismissed: (dismissDirection) {
-                          Firestore.instance
-                              .runTransaction((transaction) async {
-                            DocumentSnapshot freshSnap =
-                                await transaction.get(document.reference);
-                            await transaction.delete(freshSnap.reference);
-                          });
+                          _deleteMelody(document);
                         },
+                        direction: DismissDirection.startToEnd,
                         confirmDismiss: (dismissDirection) {
                           return showDialog<bool>(
                             context: context,
@@ -102,9 +107,9 @@ class MusicMakerHome extends StatelessWidget {
                                     ],
                                   ),
                                 ),
-                                shape: BeveledRectangleBorder(
+                                shape: ContinuousRectangleBorder(
                                     borderRadius:
-                                        BorderRadius.all(Radius.circular(5))),
+                                        BorderRadius.all(Radius.circular(50))),
                                 actions: <Widget>[
                                   FlatButton(
                                     child: Text('Cancel'),
@@ -130,13 +135,7 @@ class MusicMakerHome extends StatelessWidget {
             }),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) =>
-                      MusicMakerMain(notes: [], documentId: '')));
-        },
+        onPressed: () => _createNewMelody(context),
         backgroundColor: Theme.of(context).buttonColor,
         child: Icon(Icons.add),
       ),

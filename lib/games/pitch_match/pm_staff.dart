@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:eager_ear/games/pitch_match/sprite_nodes/feedback_node.dart';
+import 'package:eager_ear/shared/constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
@@ -35,11 +36,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
 
   Future<Null> _loadNoteAssets() async {
     ImageMap noteImages = new ImageMap(rootBundle);
-    await noteImages.load(<String>[
-      'assets/images/bunny.png',
-      'assets/images/turtle.png',
-      'assets/images/carrot.png'
-    ]);
+    await noteImages.load(noteImagePaths);
     _noteImages = noteImages;
   }
 
@@ -129,14 +126,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
 
               ui.Image image;
               for (Note note in notes) {
-                switch (note.duration) {
-                  case PitchDuration.Eighth:
-                    image = _noteImages['assets/images/bunny.png'];
-                    break;
-                  default:
-                    image = _noteImages['assets/images/bunny.png'];
-                    break;
-                }
+                image = _noteImages[getImagePathFromNote(note)];
                 var noteNode = NoteNode(image, note, widget.staffSize);
                 rootStaffNode.addNoteChild(noteNode);
                 noteNode.animateHopToStaff(notes);
@@ -144,7 +134,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
 
               // Add heard hertz carrot sprite
               if (!rootStaffNode.hasFeedbackNode()) {
-                var heardHertzImage = _noteImages['assets/images/carrot.png'];
+                var heardHertzImage = _noteImages[feedbackImagePath];
                 _heardHertzSprite = FeedbackNode(heardHertzImage);
                 rootStaffNode.addNoteChild(_heardHertzSprite);
               }

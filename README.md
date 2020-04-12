@@ -1,16 +1,9 @@
-# eager_ear
+# Eager Ear
 
-A new Flutter project.
+An app for children ages 8-12 to practice and hone their aural skills. Written in Flutter.
 
-## Getting Started
+## Main Activities
 
-This project is a starting point for a Flutter application.
+Pitch Match: allows the user to practice singing melodies.
 
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://flutter.dev/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.dev/docs/cookbook)
-
-For help getting started with Flutter, view our
-[online documentation](https://flutter.dev/docs), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Music Maker: an interface for creating custom melodies (that can be used in Pitch Match).
