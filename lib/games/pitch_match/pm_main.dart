@@ -13,11 +13,13 @@ import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
 
 import 'bloc/pm_game.dart';
+import 'bloc/pm_settings.dart';
 
 class PitchMatchMain extends StatelessWidget {
-  PitchMatchMain({this.notes}): super();
+  PitchMatchMain({this.notes, this.lowerVoice}) : super();
 
   final List<Note> notes;
+  final bool lowerVoice;
 
   @override
   Widget build(BuildContext context) {
@@ -33,40 +35,36 @@ class PitchMatchMain extends StatelessWidget {
                     Navigator.pop(context);
                   })),
         ),
-        body: ChangeNotifierProvider(
-          create: (context) => PitchMatchGame(notes),
-          child: Consumer<PitchMatchGame>(
-            builder: (_, pmState, child) {
-              return AnimatedContainer(
+        body: Consumer<PitchMatchGame>(
+          builder: (_, pmState, child) {
+            return AnimatedContainer(
                 child: Center(child: child),
                 duration: Duration(milliseconds: 500),
-                decoration: pmState.isListening ?
-                BoxDecoration(
-                    gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0xff60b3e7),
-                          Color(0xff6FC0F2),
-                          Color(0xff7ec0ee),
-                          Color(0xffa1d4f0),
-                          Color(0xfffed2a5),
-                          Color(0xffd58c69),
-                        ]))
-                : BoxDecoration(
-                    gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Color(0xff60b3e7),
-                          Color(0xff7ec0ee),
-                          Color(0xff74c1eb),
-                          Color(0xffa1d4f0)
-                        ]))
-              );
-            },
-            child: PitchMatchManager(notes: notes),
-          ),
+                decoration: pmState.isListening
+                    ? BoxDecoration(
+                        gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                            Color(0xff60b3e7),
+                            Color(0xff6FC0F2),
+                            Color(0xff7ec0ee),
+                            Color(0xffa1d4f0),
+                            Color(0xfffed2a5),
+                            Color(0xffd58c69),
+                          ]))
+                    : BoxDecoration(
+                        gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                            Color(0xff60b3e7),
+                            Color(0xff7ec0ee),
+                            Color(0xff74c1eb),
+                            Color(0xffa1d4f0)
+                          ])));
+          },
+          child: PitchMatchManager(notes: notes),
         ));
   }
 }
@@ -80,7 +78,6 @@ class PitchMatchManager extends StatefulWidget {
   _PitchMatchManagerState createState() => _PitchMatchManagerState();
 }
 
-
 class _PitchMatchManagerState extends State<PitchMatchManager> {
   Future<void> _showCompleteDialog() async {
     return showDialog<void>(
@@ -91,16 +88,11 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
           title: Text('Good Job!'),
           content: SingleChildScrollView(
             child: ListBody(
-              children: <Widget>[
-                Text('You completed the game!')
-              ],
+              children: <Widget>[Text('You completed the game!')],
             ),
           ),
           shape: ContinuousRectangleBorder(
-              borderRadius: BorderRadius.all(
-                  Radius.circular(50)
-              )
-          ),
+              borderRadius: BorderRadius.all(Radius.circular(50))),
           actions: <Widget>[
             FlatButton(
               child: Text('Exit'),
@@ -118,7 +110,14 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
   void initState() {
     super.initState();
 
+    var pmSettingsState =
+        Provider.of<PitchMatchSettingsState>(context, listen: false);
     var pmState = Provider.of<PitchMatchGame>(context, listen: false);
+
+    //Set octaves from settings state
+    pmState.setOctaves(pmSettingsState.lowerVoice);
+
+    // Set listener to complete game
     pmState.addListener(() {
       if (pmState.isComplete) {
         _showCompleteDialog();
@@ -131,11 +130,11 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
     return Column(
       children: <Widget>[
         Expanded(
-            flex: 6,
-            child: LayoutBuilder(builder: (context, constraints) {
-              var staffSize = Size(constraints.maxWidth, constraints.maxHeight);
-              return PitchMatchStaff(staffSize: staffSize);
-            }),
+          flex: 6,
+          child: LayoutBuilder(builder: (context, constraints) {
+            var staffSize = Size(constraints.maxWidth, constraints.maxHeight);
+            return PitchMatchStaff(staffSize: staffSize);
+          }),
         ),
         Expanded(
           flex: 1,
@@ -147,7 +146,9 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
                     child: PitchMatchListener(notes: pmState.currentNotes),
                     decoration: ShapeDecoration(
                         shape: ContinuousRectangleBorder(
-                            side: BorderSide(color: Theme.of(context).primaryColor, width: 3),
+                            side: BorderSide(
+                                color: Theme.of(context).primaryColor,
+                                width: 3),
                             borderRadius: BorderRadius.only(
                                 topLeft: Radius.circular(25),
                                 bottomLeft: Radius.circular(25))),
@@ -165,7 +166,9 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
                     ),
                     decoration: ShapeDecoration(
                         shape: ContinuousRectangleBorder(
-                            side: BorderSide(color: Theme.of(context).primaryColor, width: 3),
+                            side: BorderSide(
+                                color: Theme.of(context).primaryColor,
+                                width: 3),
                             borderRadius: BorderRadius.only(
                                 topRight: Radius.circular(25),
                                 bottomRight: Radius.circular(25))),

@@ -17,6 +17,7 @@ class MyApp extends StatelessWidget {
         iconTheme: IconThemeData(
           color: Colors.white
         ),
+        fontFamily: 'ChalkboardSE'
       ),
       home: MyHomePage(title: 'Eager Ear Home'),
     );

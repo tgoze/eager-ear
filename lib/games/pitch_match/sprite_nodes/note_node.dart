@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
+import 'package:eager_ear/shared/constants.dart';
 import 'package:eager_ear/shared/music.dart';
 import 'package:eager_ear/shared/note.dart';
 import 'package:flutter/material.dart';
@@ -12,9 +13,9 @@ class NoteNode extends Sprite {
 
   NoteNode(ui.Image image, this.note, this.staffSize) : super.fromImage(image);
 
-  void animateHopToStaff(List<Note> notes) {
+  void animateHopToStaff(List<Note> notes, bool isLowerVoice) {
     // Find staff position
-    Offset endPosition = _findOffsetOnStaff(notes, false);
+    Offset endPosition = _findOffsetOnStaff(notes, isLowerVoice);
 
     // Path to animate sprite on
     var randGen = math.Random();
@@ -112,14 +113,10 @@ class NoteNode extends Sprite {
     motions.stopAll();
   }
 
-  Offset _findOffsetOnStaff(List<Note> notes, isHigh) {
+  Offset _findOffsetOnStaff(List<Note> notes, bool isLowerVoice) {
     double _noteStep = size.height / 2;
     double _leftOffset = 0;
     double _topOffset = _noteStep;
-
-    // Set staff octaves
-    int lowOctave = isHigh ? 4 : 3;
-    int highOctave = isHigh ? 5 : 4;
 
     // Find bottom offset
     switch (note.pitch.pitchClass) {
@@ -153,9 +150,11 @@ class NoteNode extends Sprite {
         // nothing
         break;
     }
-    if (note.pitch.octave == lowOctave) {
+
+    // Modify offset based on octave
+    if (note.pitch.octave == getOctaves(isLowerVoice)['low']) {
       _topOffset += _noteStep * 7;
-    } else if (note.pitch.octave != highOctave) {
+    } else if (note.pitch.octave != getOctaves(isLowerVoice)['high']) {
       _topOffset = _noteStep * 14;
       note.pitch.variance = 0;
     }

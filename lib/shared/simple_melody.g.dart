@@ -13,11 +13,12 @@ SimpleMelody _$SimpleMelodyFromJson(Map<String, dynamic> json) {
         ?.map(
             (e) => e == null ? null : Note.fromJson(e as Map<String, dynamic>))
         ?.toList(),
-  );
+  )..lowerVoice = json['lowerVoice'] as bool;
 }
 
 Map<String, dynamic> _$SimpleMelodyToJson(SimpleMelody instance) =>
     <String, dynamic>{
       'title': instance.title,
+      'lowerVoice': instance.lowerVoice,
       'notes': instance.notes?.map((e) => e?.toJson())?.toList(),
     };

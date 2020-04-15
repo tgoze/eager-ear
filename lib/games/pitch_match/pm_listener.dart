@@ -83,7 +83,7 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
         bool correctHeard = false;
         var heardHertzBuffer = List<double>();
         _hertzSubscription = _hertzStream.listen((hertz) {
-          currentPitch = pmState.totalNotes[_noteIndexCounter].pitch;
+          currentPitch = pmState.melody.notes[_noteIndexCounter].pitch;
           var heardPitch = Pitch.fromHertz(hertz);
           if (correctHeard && sw.elapsedMilliseconds <= 1000) {
             heardHertzBuffer.add(hertz);
@@ -93,7 +93,7 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
                 .toList();
             if (_isCorrect(currentPitch, heardPitches)) {
               pmState.setCurrentNote(_noteIndexCounter++);
-              if (_noteIndexCounter == pmState.totalNotes.length) {
+              if (_noteIndexCounter == pmState.melody.notes.length) {
                 _cancelListener(pmState);
               }
             }

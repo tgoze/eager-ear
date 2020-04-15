@@ -1,11 +1,12 @@
 import 'dart:math' as math;
 
+import 'package:eager_ear/shared/constants.dart';
+import 'package:eager_ear/shared/simple_melody.dart';
 import 'package:flutter/material.dart';
-
 import 'package:eager_ear/shared/note.dart';
 
 class PitchMatchGame extends ChangeNotifier {
-  final List<Note> totalNotes;
+  final SimpleMelody melody;
   final List<Note> _currentNotes = [];
   int maxStaffNotes;
   int currentStaff;
@@ -19,7 +20,7 @@ class PitchMatchGame extends ChangeNotifier {
 
   List<Note> get currentNotes => List.from(_currentNotes);
 
-  PitchMatchGame(this.totalNotes) {
+  PitchMatchGame(this.melody) {
     currentStaff = 0;
     isListening = false;
     isPlaying = false;
@@ -29,12 +30,25 @@ class PitchMatchGame extends ChangeNotifier {
   void nextNotes() {
     _currentNotes.clear();
     int startIndex = currentStaff * maxStaffNotes;
-    if (startIndex < totalNotes.length) {
-      int endIndex = math.min(startIndex + maxStaffNotes, totalNotes.length);
-      _currentNotes.addAll(totalNotes.sublist(startIndex, endIndex));
+    if (startIndex < melody.notes.length) {
+      int endIndex = math.min(startIndex + maxStaffNotes, melody.notes.length);
+      _currentNotes.addAll(melody.notes.sublist(startIndex, endIndex));
       currentStaff++;
     }
     notifyListeners();
+  }
+
+  void setOctaves(bool isLowerVoice) {
+    if (isLowerVoice != melody.lowerVoice) {
+      var newOctaves = getOctaves(isLowerVoice);
+      melody.notes.forEach((note) {
+        if (note.pitch.octave == getOctaves(melody.lowerVoice)['low']) {
+          note.pitch.octave = newOctaves['low'];
+        } else {
+          note.pitch.octave = newOctaves['high'];
+        }
+      });
+    }
   }
 
   void setPreviewNote(int newIndex) {

@@ -23,24 +23,23 @@ class MusicMakerMain extends StatelessWidget {
       create: (context) => MusicMakerState(
           melody: melody,
           documentReference: documentReference,
-          modified: false
-      ),
+          modified: false),
       child: Scaffold(
           appBar: MusicMakerActionBar(),
           resizeToAvoidBottomPadding: false,
           body: Center(
-            child: Container(
-              child: MusicMakerManager(melody: melody),
-                decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                      Color(0xff60b3e7),
-                      Color(0xff7ec0ee),
-                      Color(0xff74c1eb),
-                      Color(0xffa1d4f0)
-                    ])),
+              child: Container(
+            child: MusicMakerManager(melody: melody),
+            decoration: BoxDecoration(
+                gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                  Color(0xff60b3e7),
+                  Color(0xff7ec0ee),
+                  Color(0xff74c1eb),
+                  Color(0xffa1d4f0)
+                ])),
           ))),
     );
   }
@@ -150,14 +149,15 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
     PitchClass pitchClass;
     int octave;
     int noteStep = (percentOffset * 15).round();
+    var isLowerVoice =
+        Provider.of<MusicMakerState>(context, listen: false).melody.lowerVoice;
     if (noteStep > 6) {
-      octave = 3;
+      octave = getOctaves(isLowerVoice)['low'];
     } else {
-      octave = 4;
+      octave = getOctaves(isLowerVoice)['high'];
     }
     pitchClass = staffPitchClasses[noteStep % 7];
-    if (isAccidental)
-      pitchClass = relativeAccidentals[pitchClass];
+    if (isAccidental) pitchClass = relativeAccidentals[pitchClass];
     var pitch = Pitch.fromClass(pitchClass, octave);
     pitch.accidental = isAccidental;
     return Note.fromPitch(pitch, duration);
@@ -165,7 +165,9 @@ class _MusicMakerManagerState extends State<MusicMakerManager> {
 
   Offset _offsetFromNote(Note note, BoxConstraints constraints) {
     var step = staffSteps[note.pitch.pitchClass];
-    if (note.pitch.octave == 3) {
+    var isLowerVoice =
+        Provider.of<MusicMakerState>(context, listen: false).melody.lowerVoice;
+    if (note.pitch.octave == getOctaves(isLowerVoice)['low']) {
       step += 7;
     }
     double verticalOffset = (constraints.maxHeight / 16) * step;

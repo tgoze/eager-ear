@@ -17,6 +17,8 @@ import 'package:eager_ear/games/pitch_match/sprite_nodes/note_node.dart';
 import 'package:eager_ear/games/pitch_match/sprite_nodes/staff_node.dart';
 import 'package:provider/provider.dart';
 
+import 'bloc/pm_settings.dart';
+
 class PitchMatchStaff extends StatefulWidget {
   PitchMatchStaff({Key key, this.staffSize}) : super(key: key);
 
@@ -83,7 +85,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
       noteNode.stopShakeAnimations();
       await noteNode.animateSuccessHop();
       if (index == pmState.maxStaffNotes - 1) pmState.nextNotes();
-      if (pmState.currentNote.value + 1 == pmState.totalNotes.length)
+      if (pmState.currentNote.value + 1 == pmState.melody.notes.length)
         pmState.setIsComplete(true);
     });
 
@@ -116,6 +118,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
 
   @override
   Widget build(BuildContext context) {
+    var lowerVoice = Provider.of<PitchMatchSettingsState>(context).lowerVoice;
     return Container(
       key: staffKey,
       child: Selector<PitchMatchGame, List<Note>>(
@@ -129,7 +132,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
                 image = _noteImages[getImagePathFromNote(note)];
                 var noteNode = NoteNode(image, note, widget.staffSize);
                 rootStaffNode.addNoteChild(noteNode);
-                noteNode.animateHopToStaff(notes);
+                noteNode.animateHopToStaff(notes, lowerVoice);
               }
 
               // Add heard hertz carrot sprite
