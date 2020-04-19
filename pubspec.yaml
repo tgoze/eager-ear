@@ -45,9 +45,9 @@ dev_dependencies:
   flutter_launcher_icons: ^0.7.4
 
 flutter_icons:
-  image_path: assets/icons/Eager_Ear_001.png
+  image_path: assets/icons/Eager_Ear _001.png
   adaptive_icon_background: "#FF5E00"
-  adaptive_icon_foreground: "assets/icons/Eager_Ear_001.png"
+  adaptive_icon_foreground: "assets/icons/Eager_Ear_White_002.png"
   android: true
 
 flutter:
