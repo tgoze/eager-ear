@@ -10,9 +10,10 @@ part 'simple_melody.g.dart';
 @JsonSerializable(explicitToJson: true)
 class SimpleMelody {
   String title;
+  bool lowerVoice;
   final List<Note> notes;
 
-  SimpleMelody({this.title, this.notes});
+  SimpleMelody({this.title, this.notes, this.lowerVoice});
 
   void addNote(Note note) {
     this.notes.add(note);

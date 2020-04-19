@@ -13,6 +13,20 @@ const noteImagePaths = <String>[
 
 const feedbackImagePath = 'assets/images/carrot.png';
 
+Map getOctaves(bool isLowerVoice) {
+  if (isLowerVoice) {
+    return {
+      'low': 3,
+      'high': 4
+    };
+  } else {
+    return {
+      'low': 4,
+      'high': 5
+    };
+  }
+}
+
 String getImagePathFromNote(Note note) {
   switch (note.duration) {
     case PitchDuration.Whole:

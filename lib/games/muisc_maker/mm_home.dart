@@ -42,7 +42,7 @@ class MusicMakerHome extends StatelessWidget {
         context,
         MaterialPageRoute(
             builder: (context) => MusicMakerMain(
-                melody: SimpleMelody(notes: [], title: 'New Melody'),
+                melody: SimpleMelody(notes: [], title: 'New Melody', lowerVoice: false),
                 documentReference: null)));
   }
 
