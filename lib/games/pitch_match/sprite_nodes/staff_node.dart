@@ -1,4 +1,5 @@
 import 'package:eager_ear/games/pitch_match/sprite_nodes/feedback_node.dart';
+import 'package:eager_ear/shared/note.dart';
 import 'package:flutter/material.dart';
 
 import 'package:spritewidget/spritewidget.dart';
@@ -19,6 +20,18 @@ class StaffNode extends NodeWithSize {
 
   List<Node> getNotes() {
     return children.where((node) => node is NoteNode).toList();
+  }
+
+  NoteNode getNoteNodeByNote(Note note) {
+    var noteChildren = children.where((node) {
+      if (node is NoteNode)
+        return (node).note == note;
+      return false;
+    });
+    if (noteChildren.isEmpty)
+      return null;
+    else
+      return noteChildren.first;
   }
 
   void removeNotes() {

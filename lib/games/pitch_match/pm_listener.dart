@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:eager_ear/shared/music.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -48,9 +49,31 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
     return permissionStatus == PermissionStatus.granted;
   }
 
-  bool _isCorrect(Pitch testPitch, List<Pitch> pitches) {
-    var correctPitches = pitches.where((pitch) => pitch == testPitch);
-    var percentCorrect = correctPitches.toList().length / pitches.length;
+  bool _scoreHertz(Pitch testPitch, List<double> heardHertz, List<double> initialHertz) {
+
+    var pmState = Provider.of<PitchMatchGame>(context, listen: false);
+
+    // Max score
+    double maxNoteScore = 3 / pmState.melody.notes.length;
+
+    // Aggregate into incorrect and correct
+    var correctHertz = heardHertz
+        .where((hertz) => Pitch.fromHertz(hertz) == testPitch).toList();
+    var incorrectHertz = heardHertz
+        .where((hertz) => Pitch.fromHertz(hertz) != testPitch).toList();
+    incorrectHertz.addAll(initialHertz);
+
+    var percentCorrect = correctHertz.length / heardHertz.length;
+    if (percentCorrect > .5) {
+      pmState.reduceNoteScore((1 - percentCorrect) * maxNoteScore);
+    } else {
+      double variancesSum = 0.0;
+      incorrectHertz.forEach((hertz)
+          => variancesSum += getDistance(testPitch, Pitch.fromHertz(hertz)));
+      pmState.reduceNoteScore((maxNoteScore / 10)
+          + (initialHertz.length * maxNoteScore / 300)
+          + ((variancesSum) / (incorrectHertz.length * 2) * maxNoteScore / 3));
+    }
     return percentCorrect > .5;
   }
 
@@ -66,6 +89,7 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
       });
 
       if (_hertzStream != null) {
+        // Set heard audio stream
         var bufferedStream = _hertzStream.transform<List<double>>(
             StreamTransformer.fromBind((hzStream) async* {
           while (_hertzStream != null) {
@@ -73,45 +97,55 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
             yield hzReadings;
           }
         }));
-
-        // Set heard audio stream
         pmState.setHeardHertzStream(bufferedStream);
 
-        int _noteIndexCounter = pmState.currentNote.value + 1;
+        // Listen
+        int _noteIndexCounter = pmState.lastSangIndex.value + 1;
         Pitch currentPitch;
         var sw = new Stopwatch();
-        bool correctHeard = false;
+        bool initialCorrectHeard = false;
         var heardHertzBuffer = List<double>();
-        _hertzSubscription = _hertzStream.listen((hertz) {
+        var initialHertzBuffer = List<double>();
+        _hertzSubscription = _hertzStream
+            .where((hertz) => hertz != -1)
+            .listen((hertz) {
           currentPitch = pmState.melody.notes[_noteIndexCounter].pitch;
-          var heardPitch = Pitch.fromHertz(hertz);
-          if (correctHeard && sw.elapsedMilliseconds <= 1000) {
-            heardHertzBuffer.add(hertz);
-          } else if (sw.elapsedMilliseconds > 1000) {
-            var heardPitches = heardHertzBuffer
-                .map<Pitch>((hertz) => Pitch.fromHertz(hertz))
-                .toList();
-            if (_isCorrect(currentPitch, heardPitches)) {
-              pmState.setCurrentNote(_noteIndexCounter++);
-              if (_noteIndexCounter == pmState.melody.notes.length) {
-                _cancelListener(pmState);
-              }
-            }
-            heardHertzBuffer.clear();
-            correctHeard = false;
-            sw.stop();
-            sw.reset();
-          } else {
-            correctHeard = heardPitch == currentPitch;
-            pmState.wasCorrectHeard(correctHeard);
-            if (correctHeard) {
+          // If correct pitch hasn't been detected yet
+          if (!initialCorrectHeard) {
+            initialCorrectHeard = Pitch.fromHertz(hertz) == currentPitch;
+            pmState.wasCorrectHeard(initialCorrectHeard);
+            if (initialCorrectHeard) {
               sw.start();
             }
             else {
               sw.stop();
               sw.reset();
             }
+            // If correct was heard, add to list for checking
+          } else if (initialCorrectHeard && sw.elapsedMilliseconds <= 1000) {
+            heardHertzBuffer.add(hertz);
+            // If collection is over, score, and move to next if correct
+          } else if (sw.elapsedMilliseconds > 1000) {
+            if (_scoreHertz(currentPitch, heardHertzBuffer, initialHertzBuffer)) {
+              pmState.setCurrentNote(_noteIndexCounter++);
+              if (_noteIndexCounter == pmState.melody.notes.length) {
+                _cancelListener(pmState);
+              }
+            }
+            heardHertzBuffer.clear();
+            initialHertzBuffer.clear();
+            initialCorrectHeard = false;
+            sw.stop();
+            sw.reset();
           }
+
+          // Add to initial list if still waiting for correct pitch
+          if (!initialCorrectHeard && !sw.isRunning) {
+            initialHertzBuffer.add(hertz);
+          }
+
+          // Prevent out of memory errors
+          if (initialHertzBuffer.length > 100) initialHertzBuffer.clear();
         });
       } else {
         // Audio access not granted
@@ -138,7 +172,8 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
         icon: Icon(pmState.isPlaying ? Icons.mic_off : _micIcon),
         iconSize: 40,
         disabledColor: Colors.white70,
-        onPressed: pmState.isPlaying ? null : _toggleListener,
+        onPressed: pmState.isPlaying || pmState.isComplete
+            ? null : _toggleListener,
       );
     });
   }

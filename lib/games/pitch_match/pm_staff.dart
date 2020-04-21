@@ -60,18 +60,20 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
     rootStaffNode = StaffNode(widget.staffSize);
 
     // Listener to animate preview hop
-    pmState.previewNote.addListener(() {
-      int newIndex = pmState.previewNote.value;
-      if (newIndex < pmState.currentNotes.length && newIndex >= 0) {
-        NoteNode noteNode = rootStaffNode.getNotes()[newIndex];
-        noteNode.animatePreviewHop();
+    pmState.audioIndex.addListener(() {
+      if (pmState.audioIndex.value != -1) {
+        int playingIndex = pmState.audioIndex.value +
+            (pmState.currentStaff - 1) * pmState.maxStaffNotes;
+        var nextNote = pmState.melody.notes[playingIndex];
+        NoteNode noteNode = rootStaffNode.getNoteNodeByNote(nextNote);
+        noteNode?.animatePreviewHop();
       }
     });
 
     // Listener to give feedback on note node
     pmState.correctHeard.addListener(() {
-      var index = (pmState.currentNote.value + 1) % pmState.maxStaffNotes;
-      NoteNode noteNode = rootStaffNode.getNotes()[index];
+      var nextNote = pmState.melody.notes[pmState.lastSangIndex.value + 1];
+      NoteNode noteNode = rootStaffNode.getNoteNodeByNote(nextNote);
       if (pmState.correctHeard.value)
         noteNode.animateShake(30, 1.0);
       else
@@ -79,14 +81,15 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
     });
 
     // Listener to animate success hop
-    pmState.currentNote.addListener(() async {
-      var index = pmState.currentNote.value % pmState.maxStaffNotes;
-      NoteNode noteNode = rootStaffNode.getNotes()[index];
+    pmState.lastSangIndex.addListener(() {
+      var currentNote = pmState.melody.notes[pmState.lastSangIndex.value];
+      NoteNode noteNode = rootStaffNode.getNoteNodeByNote(currentNote);
       noteNode.stopShakeAnimations();
-      await noteNode.animateSuccessHop();
-      if (index == pmState.maxStaffNotes - 1) pmState.nextNotes();
-      if (pmState.currentNote.value + 1 == pmState.melody.notes.length)
-        pmState.setIsComplete(true);
+      if (currentNote == pmState.currentNotes.last) pmState.nextNotes();
+      noteNode.animateSuccessHop().whenComplete(() {
+        if (pmState.lastSangIndex.value + 1 == pmState.melody.notes.length)
+          pmState.setIsComplete(true);
+      });
     });
 
     // Listener for feedback node
@@ -99,8 +102,9 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
             _heardHertzSprite.animateEntryToStaff(
                 staffSize, firstNoteSprite.position.dx);
           }
-          var index = (pmState.currentNote.value + 1) % pmState.maxStaffNotes;
-          double dx = rootStaffNode.getNotes()[index].position.dx;
+          var nextNote = pmState.melody.notes[pmState.lastSangIndex.value + 1];
+          NoteNode noteNode = rootStaffNode.getNoteNodeByNote(nextNote);
+          double dx = noteNode.position.dx;
           _heardHertzSprite.animateToStaffPosition(staffSize, dx, hertzList);
         });
       }
@@ -121,25 +125,28 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
     var lowerVoice = Provider.of<PitchMatchSettingsState>(context).lowerVoice;
     return Container(
       key: staffKey,
-      child: Selector<PitchMatchGame, List<Note>>(
-          selector: (_, pmState) => pmState.currentNotes,
-          builder: (context, notes, child) {
-            if (_assetsLoaded && rootStaffNode != null) {
-              if (rootStaffNode.getNotes() != null) rootStaffNode.removeNotes();
+      child: Consumer<PitchMatchGame>(
+          builder: (context, pmState, child) {
+            if (pmState.lastSangIndex.value + 1 < pmState.melody.notes.length) {
+              var nextNote =
+                  pmState.melody.notes[pmState.lastSangIndex.value + 1];
+              if (_assetsLoaded &&
+                  rootStaffNode != null &&
+                  rootStaffNode.getNoteNodeByNote(nextNote) == null) {
+                ui.Image image;
+                for (Note note in pmState.currentNotes) {
+                  image = _noteImages[getImagePathFromNote(note)];
+                  var noteNode = NoteNode(image, note, widget.staffSize);
+                  rootStaffNode.addNoteChild(noteNode);
+                  noteNode.animateHopToStaff(pmState.currentNotes, lowerVoice);
+                }
 
-              ui.Image image;
-              for (Note note in notes) {
-                image = _noteImages[getImagePathFromNote(note)];
-                var noteNode = NoteNode(image, note, widget.staffSize);
-                rootStaffNode.addNoteChild(noteNode);
-                noteNode.animateHopToStaff(notes, lowerVoice);
-              }
-
-              // Add heard hertz carrot sprite
-              if (!rootStaffNode.hasFeedbackNode()) {
-                var heardHertzImage = _noteImages[feedbackImagePath];
-                _heardHertzSprite = FeedbackNode(heardHertzImage);
-                rootStaffNode.addNoteChild(_heardHertzSprite);
+                // Add heard hertz carrot sprite
+                if (!rootStaffNode.hasFeedbackNode()) {
+                  var heardHertzImage = _noteImages[feedbackImagePath];
+                  _heardHertzSprite = FeedbackNode(heardHertzImage);
+                  rootStaffNode.addNoteChild(_heardHertzSprite);
+                }
               }
             }
             return CustomPaint(

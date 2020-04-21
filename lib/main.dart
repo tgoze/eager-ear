@@ -19,21 +19,25 @@ class MyApp extends StatelessWidget {
         ),
         fontFamily: 'ChalkboardSE'
       ),
-      home: MyHomePage(title: 'Eager Ear Home'),
+      initialRoute: 'home/',
+      routes: {
+        'home/': (context) => EagerEarHome(title: 'Eager Ear'),
+        'home/pitchMatchHome': (context) => PitchMatchHome(),
+      },
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
+class EagerEarHome extends StatefulWidget {
+  EagerEarHome({Key key, this.title}) : super(key: key);
 
   final String title;
 
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _EagerEarHomeState createState() => _EagerEarHomeState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _EagerEarHomeState extends State<EagerEarHome> {
 
   @override
   Widget build(BuildContext context) {

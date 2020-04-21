@@ -83,7 +83,7 @@ class NoteNode extends Sprite {
       new MotionCallFunction(() {
         completer.complete();
       }),
-      //new MotionRemoveNode(this)
+      new MotionRemoveNode(this)
     ]);
     motions.run(successNoteAnimation);
     return completer.future;

@@ -4,10 +4,10 @@ import 'music.dart';
 import 'note.dart';
 
 const noteImagePaths = <String>[
-'assets/images/bunny.png',
-'assets/images/bunny_sharp.png',
-'assets/images/turtle.png',
-'assets/images/turtle_sharp.png',
+'assets/images/2.0x/bunny.png',
+'assets/images/2.0x/bunny_sharp.png',
+'assets/images/2.0x/turtle.png',
+'assets/images/2.0x/turtle_sharp.png',
 'assets/images/carrot.png'
 ];
 
@@ -31,12 +31,12 @@ String getImagePathFromNote(Note note) {
   switch (note.duration) {
     case PitchDuration.Whole:
     case PitchDuration.Half:
-      if (note.pitch.accidental) return 'assets/images/turtle_sharp.png';
-      return 'assets/images/turtle.png';
+      if (note.pitch.accidental) return noteImagePaths[3];
+      return noteImagePaths[2];
     case PitchDuration.Eighth:
     case PitchDuration.Quarter:
-      if (note.pitch.accidental) return 'assets/images/bunny_sharp.png';
-      return 'assets/images/bunny.png';
+      if (note.pitch.accidental) return noteImagePaths[1];
+      return noteImagePaths[0];
     default:
       return '';
   }

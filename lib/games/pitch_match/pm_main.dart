@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eager_ear/shared/widgets/pm_background_painter.dart';
 import 'package:flutter/material.dart';
 
@@ -120,6 +121,15 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
     // Set listener to complete game
     pmState.addListener(() {
       if (pmState.isComplete) {
+        // Update score
+        Firestore.instance.runTransaction((transaction) async {
+          DocumentSnapshot newSnap =
+            await transaction.get(pmState.melodyDocumentReference);
+          newSnap.reference.updateData(<String, dynamic>{
+            'melodyScore': pmState.melody.melodyScore.toJson()
+          });
+          await transaction.update(newSnap.reference, newSnap.data);
+        });
         _showCompleteDialog();
       }
     });
@@ -152,7 +162,7 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
                             borderRadius: BorderRadius.only(
                                 topLeft: Radius.circular(25),
                                 bottomLeft: Radius.circular(25))),
-                        color: pmState.isListening
+                        color: pmState.isListening || pmState.isComplete
                             ? Theme.of(context).primaryColor
                             : Theme.of(context).accentColor),
                     height: 100,
@@ -172,7 +182,7 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
                             borderRadius: BorderRadius.only(
                                 topRight: Radius.circular(25),
                                 bottomRight: Radius.circular(25))),
-                        color: pmState.isPlaying
+                        color: pmState.isPlaying || pmState.isComplete
                             ? Theme.of(context).primaryColor
                             : Theme.of(context).accentColor),
                     height: 100,

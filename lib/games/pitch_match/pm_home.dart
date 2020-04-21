@@ -7,6 +7,7 @@ import 'package:eager_ear/games/pitch_match/pm_main.dart';
 import 'package:eager_ear/games/pitch_match/pm_settings.dart';
 import 'package:eager_ear/games/pitch_match/bloc/pm_game.dart';
 import 'package:eager_ear/shared/simple_melody.dart';
+import 'package:smooth_star_rating/smooth_star_rating.dart';
 import 'bloc/pm_settings.dart';
 
 class PitchMatchHome extends StatelessWidget {
@@ -26,6 +27,15 @@ class PitchMatchHome extends StatelessWidget {
                 ListTile(
                   leading: Icon(Icons.music_note),
                   title: Text(melody.title),
+                  trailing: SmoothStarRating(
+                    allowHalfRating: true,
+                    starCount: 3,
+                    color: Colors.yellow,
+                    borderColor: Colors.yellow,
+                    rating: melody.melodyScore == null
+                        ? 0.0
+                        : melody.melodyScore.getScore(),
+                  ),
                 )
               ],
             ),
@@ -36,7 +46,8 @@ class PitchMatchHome extends StatelessWidget {
                 MaterialPageRoute(
                     builder: (context) => MultiProvider(providers: [
                           ChangeNotifierProvider(
-                              create: (_) => PitchMatchGame(melody)),
+                              create: (_) =>
+                                  PitchMatchGame(melody, document.reference)),
                           ChangeNotifierProvider.value(value: pmSettingsState)
                         ], child: PitchMatchMain())));
           },

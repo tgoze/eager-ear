@@ -29,9 +29,13 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
       pmState.setIsPlaying(false);
       setState(() { _listenButtonIcon = Icons.play_arrow; });
     } else {
-      var currentIndex = (pmState.currentNote.value + 1) % pmState.maxStaffNotes;
-      player.openPlaylist(Playlist(assetAudioPaths: _audioPaths));
-      player.playlistPlayAtIndex(currentIndex);
+      var currentIndex = (pmState.lastSangIndex.value + 1) % pmState.maxStaffNotes;
+      player.openPlaylist(
+          Playlist(
+            assetAudioPaths: _audioPaths,
+            startIndex: currentIndex
+          )
+      );
       pmState.setIsPlaying(true);
       pmState.setIsListening(false);
       setState(() { _listenButtonIcon = Icons.stop; });
@@ -51,8 +55,9 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
       if (playlistAudio.playlist.assetAudioPaths.length ==
             playlistAudio.index + 1) {
         setState(() { _listenButtonIcon = Icons.play_arrow; });
-        Provider.of<PitchMatchGame>(context, listen: false)
-            .setIsPlaying(false);
+        var pmState = Provider.of<PitchMatchGame>(context, listen: false);
+        pmState.setIsPlaying(false);
+        pmState.setPreviewNote(-1);
       }
     });
   }
@@ -72,10 +77,19 @@ class _PitchMatchPlayerState extends State<PitchMatchPlayer> {
         return IconButton(
             icon: Icon(_listenButtonIcon),
             iconSize: 36.0,
-            onPressed: pmState.isListening ? null: _playOrStopMelody,
+            onPressed: pmState.isListening || pmState.isComplete
+                ? null : _playOrStopMelody,
             disabledColor: Colors.white70
         );
       }
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    if (player.isPlaying.value)
+      player.stop();
+    player.dispose();
   }
 }
