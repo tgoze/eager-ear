@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:eager_ear/shared/simple_melody.dart';
 import 'package:eager_ear/shared/widgets/pm_background_painter.dart';
 import 'package:flutter/material.dart';
 
@@ -12,6 +13,7 @@ import 'package:eager_ear/shared/note.dart';
 import 'package:eager_ear/shared/pitch.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
+import 'package:smooth_star_rating/smooth_star_rating.dart';
 
 import 'bloc/pm_game.dart';
 import 'bloc/pm_settings.dart';
@@ -81,15 +83,27 @@ class PitchMatchManager extends StatefulWidget {
 
 class _PitchMatchManagerState extends State<PitchMatchManager> {
   Future<void> _showCompleteDialog() async {
+    var pmState = Provider.of<PitchMatchGame>(context, listen: false);
     return showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Good Job!'),
+          title: Text('Good Singing!'),
           content: SingleChildScrollView(
             child: ListBody(
-              children: <Widget>[Text('You completed the game!')],
+              children: <Widget>[
+                Center(
+                  child: SmoothStarRating(
+                    size: 50,
+                    allowHalfRating: true,
+                    starCount: 3,
+                    color: Colors.yellow,
+                    borderColor: Colors.yellow,
+                    rating: pmState.melody.melodyScore.getScore(),
+                  ),
+                )
+              ],
             ),
           ),
           shape: ContinuousRectangleBorder(
@@ -121,14 +135,19 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
     // Set listener to complete game
     pmState.addListener(() {
       if (pmState.isComplete) {
-        // Update score
-        Firestore.instance.runTransaction((transaction) async {
-          DocumentSnapshot newSnap =
-            await transaction.get(pmState.melodyDocumentReference);
-          newSnap.reference.updateData(<String, dynamic>{
-            'melodyScore': pmState.melody.melodyScore.toJson()
-          });
-          await transaction.update(newSnap.reference, newSnap.data);
+        pmState.melodyDocumentReference.get().then((snapshot) {
+          var oldMelody = SimpleMelody.fromJson(snapshot.data);
+          // Update score if better than last score
+          if (oldMelody.melodyScore.getScore() <
+              pmState.melody.melodyScore.getScore()) {
+            pmState.melodyDocumentReference.updateData(<String, dynamic>{
+              'melodyScore': pmState.melody.melodyScore.toJson()
+            }).catchError((error) {
+              var snackBar = SnackBar(
+                  content: Text('Error saving score'));
+              Scaffold.of(context).showSnackBar(snackBar);
+            });
+          }
         });
         _showCompleteDialog();
       }

@@ -87,7 +87,8 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
       noteNode.stopShakeAnimations();
       if (currentNote == pmState.currentNotes.last) pmState.nextNotes();
       noteNode.animateSuccessHop().whenComplete(() {
-        if (pmState.lastSangIndex.value + 1 == pmState.melody.notes.length)
+        if (pmState.lastSangIndex.value + 1 == pmState.melody.notes.length
+            && !pmState.isComplete)
           pmState.setIsComplete(true);
       });
     });

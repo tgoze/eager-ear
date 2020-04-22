@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:eager_ear/shared/music.dart';
 import 'package:flutter/material.dart';
@@ -50,7 +51,6 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
   }
 
   bool _scoreHertz(Pitch testPitch, List<double> heardHertz, List<double> initialHertz) {
-
     var pmState = Provider.of<PitchMatchGame>(context, listen: false);
 
     // Max score
@@ -61,18 +61,25 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
         .where((hertz) => Pitch.fromHertz(hertz) == testPitch).toList();
     var incorrectHertz = heardHertz
         .where((hertz) => Pitch.fromHertz(hertz) != testPitch).toList();
-    incorrectHertz.addAll(initialHertz);
+    incorrectHertz.addAll(initialHertz.where((hertz) => hertz != -1));
 
+    // Determine if correct
     var percentCorrect = correctHertz.length / heardHertz.length;
     if (percentCorrect > .5) {
-      pmState.reduceNoteScore((1 - percentCorrect) * maxNoteScore);
+      // Calculate penalties
+      double totalIncorrectVariance = 0.0;
+      incorrectHertz.forEach((hertz) => totalIncorrectVariance
+          += math.min(getDistance(testPitch, Pitch.fromHertz(hertz)), 5));
+      var correctnessPenalty = (1 - percentCorrect) * maxNoteScore;
+      var timePenalty = (initialHertz.length * maxNoteScore / 300);
+      var accuracyPenalty = ((totalIncorrectVariance)
+          / (incorrectHertz.length * 5) * maxNoteScore / 3);
+      print(correctnessPenalty.toString() + ' ' + timePenalty.toString() + ' ' + accuracyPenalty.toString());
+      pmState.reduceNoteScore(correctnessPenalty
+          + timePenalty
+          + accuracyPenalty);
     } else {
-      double variancesSum = 0.0;
-      incorrectHertz.forEach((hertz)
-          => variancesSum += getDistance(testPitch, Pitch.fromHertz(hertz)));
-      pmState.reduceNoteScore((maxNoteScore / 10)
-          + (initialHertz.length * maxNoteScore / 300)
-          + ((variancesSum) / (incorrectHertz.length * 2) * maxNoteScore / 3));
+      pmState.reduceNoteScore(maxNoteScore / 10);
     }
     return percentCorrect > .5;
   }
@@ -106,9 +113,7 @@ class _PitchMatchListenerState extends State<PitchMatchListener> {
         bool initialCorrectHeard = false;
         var heardHertzBuffer = List<double>();
         var initialHertzBuffer = List<double>();
-        _hertzSubscription = _hertzStream
-            .where((hertz) => hertz != -1)
-            .listen((hertz) {
+        _hertzSubscription = _hertzStream.listen((hertz) {
           currentPitch = pmState.melody.notes[_noteIndexCounter].pitch;
           // If correct pitch hasn't been detected yet
           if (!initialCorrectHeard) {
