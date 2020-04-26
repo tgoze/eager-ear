@@ -13,7 +13,11 @@ SimpleMelody _$SimpleMelodyFromJson(Map<String, dynamic> json) {
         ?.map(
             (e) => e == null ? null : Note.fromJson(e as Map<String, dynamic>))
         ?.toList(),
-  )..lowerVoice = json['lowerVoice'] as bool;
+    lowerVoice: json['lowerVoice'] as bool,
+    melodyScore: json['melodyScore'] == null
+        ? null
+        : MelodyScore.fromJson(json['melodyScore'] as Map<String, dynamic>),
+  );
 }
 
 Map<String, dynamic> _$SimpleMelodyToJson(SimpleMelody instance) =>
@@ -21,4 +25,5 @@ Map<String, dynamic> _$SimpleMelodyToJson(SimpleMelody instance) =>
       'title': instance.title,
       'lowerVoice': instance.lowerVoice,
       'notes': instance.notes?.map((e) => e?.toJson())?.toList(),
+      'melodyScore': instance.melodyScore?.toJson(),
     };

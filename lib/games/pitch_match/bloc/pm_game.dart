@@ -1,17 +1,22 @@
 import 'dart:math' as math;
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:eager_ear/shared/constants.dart';
+import 'package:eager_ear/shared/melody_score.dart';
 import 'package:eager_ear/shared/simple_melody.dart';
 import 'package:flutter/material.dart';
 import 'package:eager_ear/shared/note.dart';
 
 class PitchMatchGame extends ChangeNotifier {
+  final DocumentReference melodyDocumentReference;
   final SimpleMelody melody;
   final List<Note> _currentNotes = [];
   int maxStaffNotes;
   int currentStaff;
-  ValueNotifier previewNote = ValueNotifier<int>(-1);
-  ValueNotifier currentNote = ValueNotifier<int>(-1);
+  // Index to track notes for audio preview
+  ValueNotifier audioIndex = ValueNotifier<int>(-1);
+  // Index to track last correctly sang note
+  ValueNotifier lastSangIndex = ValueNotifier<int>(-1);
   bool isListening;
   bool isPlaying;
   bool isComplete;
@@ -20,7 +25,8 @@ class PitchMatchGame extends ChangeNotifier {
 
   List<Note> get currentNotes => List.from(_currentNotes);
 
-  PitchMatchGame(this.melody) {
+  PitchMatchGame(this.melody, this.melodyDocumentReference) {
+    melody.melodyScore = MelodyScore.fromMaxScore(melody.notes.length, 3.0);
     currentStaff = 0;
     isListening = false;
     isPlaying = false;
@@ -51,12 +57,20 @@ class PitchMatchGame extends ChangeNotifier {
     }
   }
 
+  void reduceNoteScore(double reduceAmount) {
+    double minScore = 1 / melody.notes.length;
+    int currentNoteIndex = lastSangIndex.value + 1;
+    melody.melodyScore.noteScores[currentNoteIndex] - reduceAmount < minScore
+        ? melody.melodyScore.noteScores[currentNoteIndex] = minScore
+        : melody.melodyScore.noteScores[currentNoteIndex] -= reduceAmount;
+  }
+
   void setPreviewNote(int newIndex) {
-    previewNote.value = newIndex;
+    audioIndex.value = newIndex;
   }
 
   void setCurrentNote(int newIndex) {
-    currentNote.value = newIndex;
+    lastSangIndex.value = newIndex;
   }
 
   void setIsListening(bool isListening) {

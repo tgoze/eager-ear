@@ -32,7 +32,6 @@ class _MusicMakerActionBarState extends State<MusicMakerActionBar> {
     var mmState = Provider.of<MusicMakerState>(context, listen: false);
     var melodyJson = mmState.melody.toJson();
     var docRef = mmState.documentReference;
-    // TODO: If creating a new melody
     if (docRef == null) {
       return Firestore.instance.collection('melodies').document().setData(melodyJson);
     } else {

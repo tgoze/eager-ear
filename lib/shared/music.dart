@@ -1,9 +1,11 @@
 library music;
 
-import 'dart:math';
+import 'dart:math' as math;
+
+import 'package:eager_ear/shared/pitch.dart';
 
 const double _a4 = 440.0;
-final double _c0 = _a4 * pow(2, -4.75);
+final double _c0 = _a4 * math.pow(2, -4.75);
 
 const Map _cBasedPitchClassNames = {
   0: 'C',
@@ -45,29 +47,24 @@ const Map staffSteps = {
   PitchClass.CSharp: 6
 };
 
-int convertHertzToStep(double hertz) {
-  int pitchStep = -1;
+double convertHertzToFloatingStep(double hertz) {
+  double pitchStep = -1;
   if (hertz >= 0) {
     pitchStep = (
-        12 * (log(hertz/_c0) / log(2))
-    ).round();
+        12 * (math.log(hertz/_c0) / math.log(2))
+    );
   }
   return pitchStep;
 }
 
 double convertHertzToStepVariance(double hertz) {
-  double pitchStep = -1;
-  if (hertz >= 0) {
-    pitchStep = (
-        12 * (log(hertz/_c0) / log(2))
-    );
-  }
-  var variance = pitchStep - pitchStep.floor();
-  return variance >= .5 ? 1 - variance : variance;
+  double pitchStep = convertHertzToFloatingStep(hertz);
+  var positiveVariance = pitchStep - pitchStep.floor();
+  return positiveVariance >= .5 ? positiveVariance - 1.0 : positiveVariance;
 }
 
 int convertHertzToClassStep(double hertz, PitchClass pitchClass) {
-  int step = convertHertzToStep(hertz);
+  int step = convertHertzToFloatingStep(hertz).round();
   if (step >= 0)
     step = (step - pitchClass.index) % 12;
   return step;
@@ -114,13 +111,18 @@ String convertHertzToPitchClassString(double hertz) {
   return pitchClassString;
 }
 
+double getDistance(Pitch truePitch, Pitch pitch) {
+  return ((truePitch.pitchClass.index + (truePitch.octave * 12))
+      - (pitch.pitchClass.index + (pitch.octave * 12) + pitch.variance)).abs();
+}
+
 String convertPitchClassToString(PitchClass pitchClass, int octave) {
   return _cBasedPitchClassNames[pitchClass.index];
 }
 
 int getOctaveFromHertz(double hertz) {
   int octave = -1;
-  int step = convertHertzToStep(hertz);
+  int step = convertHertzToFloatingStep(hertz).round();
   if (step >= 0)
     octave = (step / 12).floor();
   return octave;

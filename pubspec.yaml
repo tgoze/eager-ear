@@ -36,6 +36,8 @@ dependencies:
 
   shared_preferences:
 
+  smooth_star_rating: 1.0.4+2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -1,3 +1,4 @@
+import 'package:eager_ear/shared/melody_score.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 import 'package:eager_ear/shared/music.dart';
@@ -12,8 +13,9 @@ class SimpleMelody {
   String title;
   bool lowerVoice;
   final List<Note> notes;
+  MelodyScore melodyScore;
 
-  SimpleMelody({this.title, this.notes, this.lowerVoice});
+  SimpleMelody({this.title, this.notes, this.lowerVoice, this.melodyScore});
 
   void addNote(Note note) {
     this.notes.add(note);
