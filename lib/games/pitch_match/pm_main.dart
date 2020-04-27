@@ -137,9 +137,19 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
       if (pmState.isComplete) {
         pmState.melodyDocumentReference.get().then((snapshot) {
           var oldMelody = SimpleMelody.fromJson(snapshot.data);
-          // Update score if better than last score
-          if (oldMelody.melodyScore.getScore() <
-              pmState.melody.melodyScore.getScore()) {
+          if (oldMelody.melodyScore != null) {
+            // Update score if better than last score
+            if (oldMelody.melodyScore.getScore() <
+                pmState.melody.melodyScore.getScore()) {
+              pmState.melodyDocumentReference.updateData(<String, dynamic>{
+                'melodyScore': pmState.melody.melodyScore.toJson()
+              }).catchError((error) {
+                var snackBar = SnackBar(
+                    content: Text('Error saving score'));
+                Scaffold.of(context).showSnackBar(snackBar);
+              });
+            }
+          } else {
             pmState.melodyDocumentReference.updateData(<String, dynamic>{
               'melodyScore': pmState.melody.melodyScore.toJson()
             }).catchError((error) {
