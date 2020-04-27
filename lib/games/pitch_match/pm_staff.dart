@@ -47,6 +47,7 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
     super.initState();
 
     var pmState = Provider.of<PitchMatchGame>(context, listen: false);
+    var pmSettings = Provider.of<PitchMatchSettingsState>(context, listen: false);
     var noteDim = widget.staffSize.height / 8;
     int numAllowedNotes = (widget.staffSize.width / noteDim).floor();
     pmState.maxStaffNotes = numAllowedNotes;
@@ -106,7 +107,8 @@ class _PitchMatchStaffState extends State<PitchMatchStaff> {
           var nextNote = pmState.melody.notes[pmState.lastSangIndex.value + 1];
           NoteNode noteNode = rootStaffNode.getNoteNodeByNote(nextNote);
           double dx = noteNode.position.dx;
-          _heardHertzSprite.animateToStaffPosition(staffSize, dx, hertzList);
+          _heardHertzSprite.animateToStaffPosition(staffSize, dx, hertzList,
+              pmSettings.lowerVoice);
         });
       }
       if (!pmState.isListening && _heardHertzSubscription != null) {

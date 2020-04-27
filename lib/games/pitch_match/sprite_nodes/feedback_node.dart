@@ -1,6 +1,7 @@
 import 'dart:developer';
 import 'dart:ui' as ui;
 
+import 'package:eager_ear/shared/constants.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:spritewidget/spritewidget.dart';
 
@@ -42,7 +43,7 @@ class FeedbackNode extends Sprite {
   }
 
   void animateToStaffPosition(
-      Size staffSize, double dx, List<double> hertzList) {
+      Size staffSize, double dx, List<double> hertzList, bool isLowerVoice) {
     // Get most common pitch
     var pitches = hertzList.map<Pitch>((hertz) => Pitch.fromHertz(hertz));
     var mostCommonPitch = pitches.reduce((prev, next) {
@@ -67,7 +68,7 @@ class FeedbackNode extends Sprite {
     // Animate to staff
     zPosition = 100.0;
     var note = Note.fromPitch(mostCommonPitch, PitchDuration.Unknown);
-    var endPos = _findOffsetOnStaff(staffSize, dx, note, false);
+    var endPos = _findOffsetOnStaff(staffSize, dx, note, isLowerVoice);
     var newRotation = note.pitch.accidental ? 45.0 : 0.0;
     var floatAnimation = new MotionGroup([
       new MotionTween(
@@ -77,13 +78,9 @@ class FeedbackNode extends Sprite {
     motions.run(floatAnimation);
   }
 
-  Offset _findOffsetOnStaff(Size staffSize, double dx, Note note, bool isHigh) {
+  Offset _findOffsetOnStaff(Size staffSize, double dx, Note note, bool isLowerVoice) {
     double _noteStep = size.height / 2;
     double _topOffset = _noteStep;
-
-    // Set staff octaves
-    int lowOctave = isHigh ? 4 : 3;
-    int highOctave = isHigh ? 5 : 4;
 
     // Find top offset
     switch (note.pitch.pitchClass) {
@@ -119,12 +116,12 @@ class FeedbackNode extends Sprite {
         break;
     }
 
-    if (note.pitch.octave == lowOctave) {
+    // Modify offset based on octave
+    if (note.pitch.octave == getOctaves(isLowerVoice)['low']) {
       _topOffset += _noteStep * 7;
-    } else if (note.pitch.octave != highOctave) {
+    } else if (note.pitch.octave != getOctaves(isLowerVoice)['high']) {
       _topOffset = _noteStep * 14;
       note.pitch.variance = 0;
-      note.pitch.accidental = false;
     }
 
     return Offset(dx, _topOffset + note.pitch.variance * _noteStep);

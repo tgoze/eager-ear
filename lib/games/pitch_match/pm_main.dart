@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:eager_ear/shared/constants.dart';
 import 'package:eager_ear/shared/simple_melody.dart';
 import 'package:eager_ear/shared/widgets/pm_background_painter.dart';
 import 'package:flutter/material.dart';
@@ -10,9 +10,9 @@ import 'package:eager_ear/games/pitch_match/pm_player.dart';
 import 'package:eager_ear/games/pitch_match/pm_staff.dart';
 import 'package:eager_ear/shared/music.dart';
 import 'package:eager_ear/shared/note.dart';
-import 'package:eager_ear/shared/pitch.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:smooth_star_rating/smooth_star_rating.dart';
 
 import 'bloc/pm_game.dart';
@@ -121,6 +121,68 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
     );
   }
 
+  Future<int> _getPitchMatchInstructionCount() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.get('PitchMatchInstructionCount') ?? 0;
+  }
+
+  Future<Null> _setPitchMatchInstructionCount(int count) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setInt('PitchMatchInstructionCount', count);
+  }
+
+  Future<void> _showInstructionDialog() async {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Instructions'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: <Widget>[
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: <Widget>[
+                      Expanded(
+                          child: Image.asset(noteImagePaths[1]
+                          )
+                      ),
+                      Expanded(
+                        child: Transform.rotate(
+                          angle: 45.0,
+                          child: Image.asset(feedbackImagePath,
+                            height: 75,
+                            width: 75
+                          ),
+                        ),
+                      )
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(0, 10, 0, 0),
+                  child: Text('The \"sharp\" animals are picky. Feed them their carrots sideways!'),
+                )
+              ],
+            ),
+          ),
+          shape: ContinuousRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(50))),
+          actions: <Widget>[
+            FlatButton(
+              child: Text('OK'),
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -161,6 +223,18 @@ class _PitchMatchManagerState extends State<PitchMatchManager> {
         });
         _showCompleteDialog();
       }
+    });
+
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      // Show instructions first two times a melody with accidentals is seen
+      if (pmState.melody.notes
+          .where((note) => isAccidental(note.pitch.pitchClass)).length > 0)
+        _getPitchMatchInstructionCount().then((count) {
+          if (count <= 2) {
+            _setPitchMatchInstructionCount(count++);
+            _showInstructionDialog();
+          }
+        });
     });
   }
 
